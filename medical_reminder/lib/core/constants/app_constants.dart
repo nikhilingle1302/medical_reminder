@@ -8,8 +8,13 @@ class AppConstants {
   static const String roleKey = 'user_role';
   
   // Roles
+   
   static const String patientRole = 'patient';
   static const String caretakerRole = 'caretaker';
+  static const String sellerRole = 'seller';
+
+  // static const String tokenKey = 'auth_token';
+  // static const String roleKey = 'user_role';
   
   // API Endpoints
   static const String register = '/api/accounts/register/';
@@ -39,4 +44,6 @@ class ApiConfig {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
+
+
 }

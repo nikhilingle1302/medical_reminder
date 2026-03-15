@@ -216,17 +216,49 @@ class DashboardScreen extends StatelessWidget {
             ),
           );
         }),
+        
+        SizedBox(height: 24.h),
+        // ElevatedButton(
+        // onPressed: (){
+        //  Get.toNamed('/chat-bot');
+        // }, 
+        // child:Text("chat bot",style: TextStyle(fontSize: 14.h),)),
+       SizedBox(
+  width: double.infinity,
+  height: 48.h,
+  child: ElevatedButton(
+    onPressed: () {
+      Get.toNamed('/bmi-calculator');
+    },
+    style: ElevatedButton.styleFrom(
+      elevation: 2,
+      backgroundColor: Colors.blueAccent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.monitor_weight_outlined,
+          size: 18.h,
+          color: Colors.white,
+        ),
+        SizedBox(width: 8.w),
+        Text(
+          "BMI Calculator",
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
 
-        ElevatedButton(
-        onPressed: (){
-         Get.toNamed('/chat-bot');
-        }, 
-        child:Text("chat bot",style: TextStyle(fontSize: 14.h),)),
-        ElevatedButton(
-        onPressed: (){
-         Get.toNamed('/bmi-calculator');
-        }, 
-        child:Text("BMI Calculator",style: TextStyle(fontSize: 14.h),))
       ],
     );
   }

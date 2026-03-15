@@ -6,6 +6,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:medical_reminder/data/repositories/reminder_repository.dart';
 import 'package:medical_reminder/data/models/reminder_model.dart';
 import 'package:medical_reminder/data/models/medicine_model.dart';
+import 'package:medical_reminder/data/services/notification_service.dart';
 import 'package:medical_reminder/presentation/controllers/auth_controller.dart';
 
 import 'package:intl/intl.dart';
@@ -13,7 +14,7 @@ import 'package:intl/intl.dart';
 class ReminderController extends GetxController {
   final ReminderRepository _reminderRepository;
   final AuthController _authController = Get.find<AuthController>();
-  
+  final notificationService = Get.find<NotificationService>();
   ReminderController(this._reminderRepository);
   
   final RxList<Reminder> reminders = <Reminder>[].obs;
@@ -80,81 +81,161 @@ Future<void> fetchReminders() async {
     }
   }
   
+  // Future<void> createReminder() async {
+  //   try {
+  //     if (selectedMedicine.value == null || selectedTime.value == null) {
+  //       Get.snackbar(
+  //         'Error',
+  //         'Please select medicine and time',
+  //         backgroundColor: Colors.red,
+  //         colorText: Colors.white,
+  //       );
+  //       return;
+  //     }
+      
+  //     isLoading.value = true;
+      
+  //     // Format time for API
+  //     final formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedTime.value!);
+      
+  //     // final request = CreateReminderRequest(
+  //     //   medicineId: selectedMedicine.value!.id,
+  //     //   dosage: dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
+  //     //   reminderTime: formattedTime,
+  //     //   firebasePatientId: firebasePatientIdController.text.isNotEmpty 
+  //     //       ? firebasePatientIdController.text 
+  //     //       : "++",
+  //     //   firebaseCaretakerId: firebaseCaretakerIdController.text.isNotEmpty
+  //     //       ? firebaseCaretakerIdController.text
+  //     //       : null,
+  //     // );
+  //     final request = {
+  //       "medicine_id": selectedMedicine.value!.id,
+  //       "dosage": dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
+  //       "reminder_time": formattedTime,
+  //       "firebase_patient_id": firebasePatientIdController.text.isNotEmpty 
+  //           ? firebasePatientIdController.text 
+  //           : "++",
+  //       // "firebase_caretaker_id": firebaseCaretakerIdController.text.isNotEmpty
+  //       //     ? firebaseCaretakerIdController.text
+  //       //     : null,
+  //     };
+  //     log("create reminder request: ${request.toString()}");
+  //     final response = await _reminderRepository.createReminder(request);
+  //     log("create reminder response: ${response.toString()}");
+  //     if (response['message'] != null ) {
+  //       // Clear form
+  //       selectedMedicine.value = null;
+  //       dosageController.clear();
+  //       selectedTime.value = null;
+  //       firebasePatientIdController.clear();
+  //       firebaseCaretakerIdController.clear();
+        
+  //       // Refresh list
+  //       await fetchReminders();
+        
+  //       Get.back();
+  //       Get.snackbar(
+  //         'Success',
+  //         'Reminder created successfully',
+  //         backgroundColor: Colors.green,
+  //         colorText: Colors.white,
+  //       );
+  //     } else {
+  //       throw Exception('Failed to create reminder');
+  //     }
+  //   } catch (e) {
+  //     Get.snackbar(
+  //       'Error',
+  //       'Failed to create reminder: ${e.toString()}',
+  //       backgroundColor: Colors.red,
+  //       colorText: Colors.white,
+  //     );
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
+  
   Future<void> createReminder() async {
-    try {
-      if (selectedMedicine.value == null || selectedTime.value == null) {
-        Get.snackbar(
-          'Error',
-          'Please select medicine and time',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return;
-      }
-      
-      isLoading.value = true;
-      
-      // Format time for API
-      final formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedTime.value!);
-      
-      // final request = CreateReminderRequest(
-      //   medicineId: selectedMedicine.value!.id,
-      //   dosage: dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
-      //   reminderTime: formattedTime,
-      //   firebasePatientId: firebasePatientIdController.text.isNotEmpty 
-      //       ? firebasePatientIdController.text 
-      //       : "++",
-      //   firebaseCaretakerId: firebaseCaretakerIdController.text.isNotEmpty
-      //       ? firebaseCaretakerIdController.text
-      //       : null,
-      // );
-      final request = {
-        "medicine_id": selectedMedicine.value!.id,
-        "dosage": dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
-        "reminder_time": formattedTime,
-        "firebase_patient_id": firebasePatientIdController.text.isNotEmpty 
-            ? firebasePatientIdController.text 
-            : "++",
-        // "firebase_caretaker_id": firebaseCaretakerIdController.text.isNotEmpty
-        //     ? firebaseCaretakerIdController.text
-        //     : null,
-      };
-      log("create reminder request: ${request.toString()}");
-      final response = await _reminderRepository.createReminder(request);
-      log("create reminder response: ${response.toString()}");
-      if (response['message'] != null ) {
-        // Clear form
-        selectedMedicine.value = null;
-        dosageController.clear();
-        selectedTime.value = null;
-        firebasePatientIdController.clear();
-        firebaseCaretakerIdController.clear();
-        
-        // Refresh list
-        await fetchReminders();
-        
-        Get.back();
-        Get.snackbar(
-          'Success',
-          'Reminder created successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-      } else {
-        throw Exception('Failed to create reminder');
-      }
-    } catch (e) {
+  try {
+    if (selectedMedicine.value == null || selectedTime.value == null) {
       Get.snackbar(
         'Error',
-        'Failed to create reminder: ${e.toString()}',
+        'Please select medicine and time',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-    } finally {
-      isLoading.value = false;
+      return;
     }
+    
+    isLoading.value = true;
+    
+    // Format time for API
+    final formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedTime.value!);
+    final displayTime = DateFormat('h:mm a').format(selectedTime.value!);
+    
+    final request = {
+      "medicine_id": selectedMedicine.value!.id,
+      "dosage": dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
+      "reminder_time": formattedTime,
+      "firebase_patient_id": firebasePatientIdController.text.isNotEmpty 
+          ? firebasePatientIdController.text 
+          : "++",
+    };
+    
+    log("create reminder request: ${request.toString()}");
+    final response = await _reminderRepository.createReminder(request);
+    log("create reminder response: ${response.toString()}");
+    
+    if (response['message'] != null) {
+      // ✅ SHOW IMMEDIATE NOTIFICATION (Solution 2)
+      
+      await notificationService.showImmediateReminderCreatedNotification(
+        medicineName: selectedMedicine.value!.name,
+        dosage: dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
+        scheduledTime: displayTime,
+      );
+      await notificationService.scheduleReminderNotificationFromDateTime(
+  id: response['id'], // or generate unique id if API doesn't return
+  medicineName: selectedMedicine.value!.name,
+  dosage: dosageController.text.isNotEmpty 
+      ? dosageController.text 
+      : '1 tablet',
+  scheduledDateTime: selectedTime.value!,
+);
+      
+      
+      // Clear form
+      selectedMedicine.value = null;
+      dosageController.clear();
+      selectedTime.value = null;
+      firebasePatientIdController.clear();
+      firebaseCaretakerIdController.clear();
+      
+      // Refresh list
+      await fetchReminders();
+      
+      Get.back();
+      Get.snackbar(
+        'Success',
+        'Reminder created successfully',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } else {
+      throw Exception('Failed to create reminder');
+    }
+  } catch (e) {
+    Get.snackbar(
+      'Error',
+      'Failed to create reminder: ${e.toString()}',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  } finally {
+    isLoading.value = false;
   }
-  
+}
   Future<void> markAsTaken(int reminderId) async {
     try {
       final response = await _reminderRepository.markReminderTaken(reminderId);
@@ -211,7 +292,7 @@ Future<void> fetchReminders() async {
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to get due reminders: ${e.toString()}',
+        'Failed to get due reminders.',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );

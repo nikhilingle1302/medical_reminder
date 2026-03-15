@@ -1,9 +1,12 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:medical_reminder/core/app_bindings.dart';
+import 'package:medical_reminder/core/constants/app_constants.dart';
 import 'package:medical_reminder/core/routes/app_pages.dart';
 import 'package:medical_reminder/core/theme/app_theme.dart';
 import 'package:medical_reminder/data/services/notification_service.dart';
@@ -12,6 +15,7 @@ import 'package:medical_reminder/presentation/controllers/auth_controller.dart';
 import 'package:medical_reminder/presentation/screens/auth/login_screen.dart';
 import 'package:medical_reminder/presentation/screens/caretaker/caretaker_dashboard.dart';
 import 'package:medical_reminder/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:medical_reminder/presentation/screens/pharmacy/pharmacy_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,13 +23,18 @@ void main() async {
   // Initialize storage FIRST
   await GetStorage.init();
   
-  // Initialize Firebase ONCE
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  // Initialize ScreenUtil
+  // Initialize ScreenUtil before Firebase
   await ScreenUtil.ensureScreenSize();
+  
+  // Initialize Firebase with error handling
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('❌ Firebase initialization error: $e');
+  }
   
   runApp(const MyApp());
 }
@@ -65,16 +74,31 @@ class MyApp extends StatelessWidget {
   }
   
   Future<void> _initializeApp() async {
-    // Add a small delay for splash screen
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Get auth controller and check login status
-    final authController = Get.find<AuthController>();
-    await authController.checkLoginStatus();
-     await Get.find<NotificationService>().initialize();
-    // Optional: You can add other initialization here
-    return;
+  print('🔄 Starting app initialization...');
+  
+  // Add a small delay for splash screen
+  await Future.delayed(const Duration(seconds: 1));
+  
+  // Get auth controller and check login status
+  final authController = Get.find<AuthController>();
+  await authController.checkLoginStatus();
+  
+  // Initialize notification service with better logging
+  await _initializeNotificationService();
+  
+  print('✅ App initialization complete');
+}
+
+Future<void> _initializeNotificationService() async {
+  try {
+    print('🔔 Initializing notification service...');
+    final notificationService = Get.isRegistered<NotificationService>()? Get.find<NotificationService>():Get.put(NotificationService());
+    await notificationService.initialize();
+    print('✅ Notification service initialized');
+  } catch (e) {
+    print('❌ Notification service initialization error: $e');
   }
+}
 }
 
 class AuthWrapper extends StatelessWidget {
@@ -103,13 +127,29 @@ class DashboardWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
     
-    return Obx(() {
-      if (authController.isCaretaker()) {
+    // return Obx(() {
+    //   if (authController.isCaretaker()) {
+    //     return CaretakerDashboardScreen();
+    //   } else {
+    //     return DashboardScreen();
+    //   }
+    // });
+
+    log("user role: ${authController.userRole.value}");
+      return Obx(() {
+      final role = authController.userRole.value.trim().toLowerCase();
+
+      log("Normalized role: $role");
+
+      if (role == AppConstants.caretakerRole.toLowerCase()) {
         return CaretakerDashboardScreen();
+      } else if (role == AppConstants.sellerRole.toLowerCase()) {
+        return SellerDashboardScreen();
       } else {
         return DashboardScreen();
       }
     });
+
   }
 }
 

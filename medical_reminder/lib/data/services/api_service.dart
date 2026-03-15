@@ -20,6 +20,13 @@ abstract class ApiService {
   @POST('/api/accounts/caretaker/login/')
   Future<LoginResponse> caretakerLogin(@Body() LoginRequest request);
 
+  @POST('/api/accounts/seller/login/')
+Future<LoginResponse> sellerLogin(@Body() LoginRequest request);
+
+@POST('/api/pharmacy/sales/')
+Future<dynamic> sellMedicine(@Body() Map<String, dynamic> request);
+
+
   // Pharmacy Endpoints
   @GET('/api/pharmacy/medicines/')
   Future<List<Medicine>> getMedicines();
@@ -50,8 +57,13 @@ Future<ReminderResponse> getReminders();
   @GET('/api/reminders/test-fcm/')
   Future<void> testFcm();
 
-  @POST('/api/pharmacy/medicines/save/')
+  // @POST('/api/pharmacy/medicines/save/')
+  // Future<dynamic> createMedicine(@Body() dynamic request);
+    @POST('/api/pharmacy/medicines/')
   Future<dynamic> createMedicine(@Body() dynamic request);
+
+    @POST('/api/pharmacy/medicines/')
+  Future<dynamic> createSellerMedicine(@Body() dynamic request);
 
   @GET('/api/reminders/due/')
   Future<dynamic> getDueReminders();

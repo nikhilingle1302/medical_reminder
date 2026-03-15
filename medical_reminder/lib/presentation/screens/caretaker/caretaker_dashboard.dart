@@ -97,21 +97,25 @@ class _CaretakerDashboardScreenState
           // Stats Cards
           Row(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Total Medicines',
-                  value: medicineController.medicines.length.toString(),
-                  icon: Icons.medical_services,
-                  color: const Color(0xFF2D9CDB),
+             Obx(()=>
+                 Expanded(
+                  child: _buildStatCard(
+                    title: 'Total Medicines',
+                    value: medicineController.medicines.length.toString(),
+                    icon: Icons.medical_services,
+                    color: const Color(0xFF2D9CDB),
+                  ),
                 ),
               ),
               SizedBox(width: 12.w),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Active Reminders',
-                  value:reminderController.reminders.where((r) => !r.isTaken).length.toString(),
-                  icon: Icons.notifications_active,
-                  color: const Color(0xFF4CAF50),
+              Obx(
+                ()=> Expanded(
+                  child: _buildStatCard(
+                    title: 'Active Reminders',
+                    value:reminderController.reminders.where((r) => !r.isTaken).length.toString(),
+                    icon: Icons.notifications_active,
+                    color: const Color(0xFF4CAF50),
+                  ),
                 ),
               ),
             ],

@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -24,9 +27,11 @@ class NotificationService {
 
   Future<void> initialize() async {
     log("in initialize notification service");
+    
     // Initialize timezone
     tz.initializeTimeZones();
-    
+
+  tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
     // Initialize local notifications
     await _initializeLocalNotifications();
     
@@ -40,32 +45,89 @@ class NotificationService {
     await _saveFcmTokenToServer();
   }
 
-  Future<void> _initializeLocalNotifications() async {
-    const AndroidInitializationSettings androidInitializationSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+  // Future<void> _initializeLocalNotifications() async {
+  //   const AndroidInitializationSettings androidInitializationSettings =
+  //       AndroidInitializationSettings('@mipmap/ic_launcher');
     
-    const DarwinInitializationSettings iosInitializationSettings =
-        DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+  //   const DarwinInitializationSettings iosInitializationSettings =
+  //       DarwinInitializationSettings(
+  //     requestAlertPermission: true,
+  //     requestBadgePermission: true,
+  //     requestSoundPermission: true,
+  //   );
     
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: androidInitializationSettings,
-      iOS: iosInitializationSettings,
-    );
+  //   const InitializationSettings initializationSettings =
+  //       InitializationSettings(
+  //     android: androidInitializationSettings,
+  //     iOS: iosInitializationSettings,
+  //   );
 
-    _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    await _localNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification tap
-        _onNotificationTap(response);
-      },
-    );
+  //   _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  //   await _localNotificationsPlugin.initialize(
+  //     initializationSettings,
+  //     onDidReceiveNotificationResponse: (NotificationResponse response) {
+  //       // Handle notification tap
+  //       _onNotificationTap(response);
+  //     },
+  //   );
+  // }
+  Future<void> _initializeLocalNotifications() async {
+  _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  /// ---------------- ANDROID INITIALIZATION ----------------
+  const AndroidInitializationSettings androidInitializationSettings =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  /// ---------------- iOS INITIALIZATION ----------------
+  const DarwinInitializationSettings iosInitializationSettings =
+      DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+
+  /// ---------------- GENERAL INITIALIZATION ----------------
+  const InitializationSettings initializationSettings =
+      InitializationSettings(
+    android: androidInitializationSettings,
+    iOS: iosInitializationSettings,
+  );
+
+  await _localNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse response) {
+      if (response.payload != null) {
+        try {
+          final data = json.decode(response.payload!);
+          _navigateToReminderScreen(data);
+        } catch (e) {
+          print("❌ Error parsing notification payload: $e");
+        }
+      }
+    },
+  );
+
+  /// ---------------- ANDROID CHANNEL CREATION ----------------
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'medication_channel_id', // MUST match your notification id
+    'Medication Reminders',
+    description: 'Notifications for medication reminders',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+  );
+
+  final androidPlugin = _localNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+  if (androidPlugin != null) {
+    await androidPlugin.createNotificationChannel(channel);
   }
+
+  print("✅ Local notification initialized successfully");
+}
+
 
   Future<void> _initializeFirebaseMessaging() async {
     // Configure Firebase messaging
@@ -98,24 +160,51 @@ class NotificationService {
     }
   }
 
-  Future<void> _saveFcmTokenToServer() async {
-    log("in save fcm token");
-    try {
-      final token = await _firebaseMessaging.getToken();
-      if (token != null && _authController.isLoggedIn.value) {
+Future<void> _saveFcmTokenToServer() async {
+  print('🔑 Attempting to get FCM token...');
+  try {
+    // First, check Firebase app is initialized
+    if (Firebase.apps.isEmpty) {
+      print('❌ Firebase not initialized!');
+      return;
+    }
+    
+    // Get FCM token
+    final token = await _firebaseMessaging.getToken();
+    print('📱 FCM Token: ${token ?? "NULL"}');
+    
+    if (token != null) {
+      print('✅ FCM token obtained: ${token.substring(0, 20)}...');
+      
+      if (_authController.isLoggedIn.value) {
         final authToken = _authController.getToken();
         if (authToken != null) {
-          // await _apiService.saveFcmToken(
-          //   'Bearer $authToken',
-          //   {'token': token},
-          // );
-          print('FCM Token saved to server: $token');
+          print('📤 Saving FCM token to server...');
+          
+          await _apiService.saveFcmToken(
+           
+            {'token': token}
+          );
+          print('✅ FCM token saved to server');
+        } else {
+          print('⚠️ No auth token available, saving FCM token locally');
+          // Save to local storage for later use
+          final storage = GetStorage();
+          await storage.write('fcm_token', token);
         }
+      } else {
+        print('⚠️ User not logged in, saving FCM token locally');
+        final storage = GetStorage();
+        await storage.write('fcm_token', token);
       }
-    } catch (e) {
-      print('Error saving FCM token: $e');
+    } else {
+      print('❌ Failed to get FCM token');
     }
+  } catch (e) {
+    print('❌ Error getting/saving FCM token: $e');
+    print('Stack trace: ${e.toString()}');
   }
+}
 
  // In lib/core/services/notification_service.dart
 Future<void> scheduleReminderNotification(Reminder reminder) async {
@@ -192,7 +281,15 @@ DateTime _parseReminderTime(String timeString) {
     );
     
     // Create timezone aware datetime
-    final tzDateTime = tz.TZDateTime.from(scheduledDateTime, location);
+   // final tzDateTime = tz.TZDateTime.from(scheduledDateTime, location);
+   var tzDateTime = tz.TZDateTime.from(scheduledDateTime, location);
+
+// If time already passed, schedule 5 seconds later (safety fallback)
+if (tzDateTime.isBefore(tz.TZDateTime.now(location))) {
+  tzDateTime = tz.TZDateTime.now(location).add(const Duration(seconds: 5));
+  print("⚠️ Scheduled time was past. Adjusted to $tzDateTime");
+}
+
     
     // Schedule notification
     await _localNotificationsPlugin.zonedSchedule(
@@ -209,7 +306,7 @@ DateTime _parseReminderTime(String timeString) {
   } catch (e) {
     print('Error scheduling notification: $e');
     // Show immediate notification for debugging
-    await _showImmediateNotification(id, title, body, payload);
+    //await _showImmediateNotification(id, title, body, payload);
   }
 }
 
@@ -337,4 +434,129 @@ Future<void> _showImmediateNotification(
       },
     );
   }
+
+  // Add this method to NotificationService class
+Future<void> showImmediateReminderCreatedNotification({
+  required String medicineName,
+  required String dosage,
+  String? scheduledTime,
+}) async {
+  try {
+    final now = DateTime.now();
+    final notificationId = now.millisecondsSinceEpoch ~/ 1000;
+    
+    const androidNotificationDetails = AndroidNotificationDetails(
+      'reminder_creation_channel',
+      'Reminder Creation',
+      channelDescription: 'Notifications when reminders are created',
+      importance: Importance.high,
+      priority: Priority.high,
+      enableVibration: true,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('notification_sound'),
+    );
+    
+    const iosNotificationDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+    );
+    
+    final notificationDetails = NotificationDetails(
+      android: androidNotificationDetails,
+      iOS: iosNotificationDetails,
+    );
+    
+    String body = 'Reminder set for $medicineName ($dosage)';
+    if (scheduledTime != null) {
+      body += ' at $scheduledTime';
+    }
+    
+    await _localNotificationsPlugin.show(
+      notificationId,
+      'Reminder Created ✓',
+      body,
+      notificationDetails,
+      payload: json.encode({
+        'type': 'reminder_created',
+        'medicine': medicineName,
+        'dosage': dosage,
+        'action': 'view_reminders',
+      }),
+    );
+    
+    log('📱 Immediate notification shown for new reminder');
+  } catch (e) {
+    log('⚠️ Error showing immediate notification: $e');
+  }
+}
+
+Future<void> scheduleReminderNotificationFromDateTime({
+  required int id,
+  required String medicineName,
+  required String dosage,
+  required DateTime scheduledDateTime,
+}) async {
+  try {
+    final now = DateTime.now();
+
+    // Prevent scheduling past notifications
+    if (scheduledDateTime.isBefore(now)) {
+      log('⚠️ Cannot schedule notification in the past');
+      return;
+    }
+
+    await _scheduleLocalNotification(
+      id: id,
+      title: 'Medication Reminder 💊',
+      body: 'Time to take $medicineName ($dosage)',
+      scheduledDateTime: scheduledDateTime,
+      payload: {
+        'type': 'reminder',
+        'id': id.toString(),
+        'medicine': medicineName,
+        'dosage': dosage,
+      },
+    );
+
+    log('✅ Local reminder scheduled at $scheduledDateTime');
+  } catch (e) {
+    log('❌ Error scheduling local reminder: $e');
+  }
+}
+
+
+  // Add this method to NotificationService for testing
+// Future<void> debugFCM() async {
+//   print('🔍 FCM Debug Information:');
+//   print('1. Firebase apps: ${Firebase.apps.length}');
+  
+//   try {
+//     // Check permissions
+//     final settings = await _firebaseMessaging.getNotificationSettings();
+//     print('2. Notification settings:');
+//     print('   - Authorization status: ${settings.authorizationStatus}');
+//     print('   - Alert: ${settings.alert}');
+//     print('   - Badge: ${settings.badge}');
+//     print('   - Sound: ${settings.sound}');
+    
+//     // Try to get token
+//     final token = await _firebaseMessaging.getToken();
+//     print('3. FCM Token: ${token ?? "NULL"}');
+    
+//     // Check if we have a stored token
+//     final storage = GetStorage();
+//     final storedToken = storage.read('fcm_token');
+//     print('4. Stored FCM token: ${storedToken ?? "NULL"}');
+    
+//     // Check auth status
+//     print('5. Auth status:');
+//     print('   - Logged in: ${_authController.isLoggedIn.value}');
+//     print('   - User ID: ${_authController.userId.value}');
+    
+//   } catch (e) {
+//     print('❌ Debug error: $e');
+//   }
+// }
 }

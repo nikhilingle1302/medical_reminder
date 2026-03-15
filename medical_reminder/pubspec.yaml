@@ -36,8 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   json_annotation: ^4.9.0
   dio: ^5.9.0
-  firebase_core: ^4.2.1
-  firebase_messaging: ^16.0.4
+  firebase_core: ^3.0.0
+  firebase_messaging: ^15.0.0
   flutter_local_notifications: ^19.5.0
   get: ^4.7.3
   get_storage: ^2.1.1

@@ -37,21 +37,34 @@ class Medicine {
 class CreateMedicineRequest {
   @JsonKey(name: 'name')
   final String name;
+
   @JsonKey(name: 'company')
   final String company;
-  @JsonKey(name: 'stock')
-  final int stock;
-  @JsonKey(name: 'expiry')
-  final String expiry;
+
+  @JsonKey(name: 'category')
+  final String category;
+
+  @JsonKey(name: 'quantity')
+  final int quantity;
+
+  @JsonKey(name: 'expiry_date')
+  final String expiryDate;
+
+  @JsonKey(name: 'price')
+  final int price;
 
   CreateMedicineRequest({
     required this.name,
     required this.company,
-    required this.stock,
-    required this.expiry,
+    required this.category,
+    required this.quantity,
+    required this.expiryDate,
+    required this.price,
   });
 
   factory CreateMedicineRequest.fromJson(Map<String, dynamic> json) =>
       _$CreateMedicineRequestFromJson(json);
-  Map<String, dynamic> toJson() => _$CreateMedicineRequestToJson(this);
+
+  Map<String, dynamic> toJson() =>
+      _$CreateMedicineRequestToJson(this);
 }

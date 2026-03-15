@@ -29,8 +29,10 @@ CreateMedicineRequest _$CreateMedicineRequestFromJson(
     CreateMedicineRequest(
       name: json['name'] as String,
       company: json['company'] as String,
-      stock: (json['stock'] as num).toInt(),
-      expiry: json['expiry'] as String,
+      category: json['category'] as String,
+      quantity: (json['quantity'] as num).toInt(),
+      expiryDate: json['expiry_date'] as String,
+      price: (json['price'] as num).toInt(),
     );
 
 Map<String, dynamic> _$CreateMedicineRequestToJson(
@@ -38,6 +40,8 @@ Map<String, dynamic> _$CreateMedicineRequestToJson(
     <String, dynamic>{
       'name': instance.name,
       'company': instance.company,
-      'stock': instance.stock,
-      'expiry': instance.expiry,
+      'category': instance.category,
+      'quantity': instance.quantity,
+      'expiry_date': instance.expiryDate,
+      'price': instance.price,
     };

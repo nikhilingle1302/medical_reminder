@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:medical_reminder/core/constants/app_constants.dart';
+import 'package:medical_reminder/core/routes/app_pages.dart';
 import 'package:medical_reminder/data/repositories/auth_repository.dart';
 import 'package:medical_reminder/data/models/auth_model.dart';
 
@@ -90,58 +91,102 @@ class AuthController extends GetxController {
 //   }
 // }
   
-  Future<void> login({required bool isPatient}) async {
+//   Future<void> login({required bool isPatient}) async {
+//   try {
+//     isLoading.value = true;
+    
+//     final request = LoginRequest(
+//       username: usernameController.text.trim(),
+//       password: passwordController.text,
+//     );
+    
+//     print('🔐 Login request: ${request.toJson()}');
+    
+//     final response = isPatient
+//         ? await _authRepository.patientLogin(request)
+//         : await _authRepository.caretakerLogin(request);
+    
+//     print('✅ Login response: ${response.toJson()}');
+//     currentUser.value = User(
+//       id:response.userId,
+//       username: response.username,
+//       role: response.role
+//     );
+//     // Save token and user data
+//     await _storage.write(AppConstants.tokenKey, response.token);
+//     await _storage.write('user_id', response.userId);
+//     await _storage.write('username', response.username);
+//     await _storage.write(AppConstants.roleKey, response.role);
+    
+//     authToken.value = response.token;
+//     userId.value = response.userId;
+//     username.value = response.username;
+//     userRole.value = response.role;
+//     isLoggedIn.value = true;
+    
+//     // Clear controllers
+//     usernameController.clear();
+//     passwordController.clear();
+//     // medicineController.fetchMedicines();
+//     // reminderController.fetchReminders();
+//     Get.offAllNamed('/dashboard');
+    
+//   } catch (e) {
+//     print('❌ Login error: $e');
+//     Get.snackbar(
+//       'Login Failed',
+//       'Invalid credentials or network error',
+//       backgroundColor: Colors.red,
+//       colorText: Colors.white,
+//     );
+//   } finally {
+//     isLoading.value = false;
+//   }
+Future<void> login({required String role}) async {
   try {
     isLoading.value = true;
-    
+
     final request = LoginRequest(
       username: usernameController.text.trim(),
       password: passwordController.text,
     );
-    
-    print('🔐 Login request: ${request.toJson()}');
-    
-    final response = isPatient
-        ? await _authRepository.patientLogin(request)
-        : await _authRepository.caretakerLogin(request);
-    
-    print('✅ Login response: ${response.toJson()}');
-    currentUser.value = User(
-      id:response.userId,
-      username: response.username,
-      role: response.role
-    );
-    // Save token and user data
-    await _storage.write(AppConstants.tokenKey, response.token);
-    await _storage.write('user_id', response.userId);
-    await _storage.write('username', response.username);
-    await _storage.write(AppConstants.roleKey, response.role);
-    
-    authToken.value = response.token;
-    userId.value = response.userId;
-    username.value = response.username;
-    userRole.value = response.role;
-    isLoggedIn.value = true;
-    
-    // Clear controllers
-    usernameController.clear();
-    passwordController.clear();
-    // medicineController.fetchMedicines();
-    // reminderController.fetchReminders();
-    Get.offAllNamed('/dashboard');
-    
+
+    late LoginResponse response;
+
+    if (role == AppConstants.patientRole) {
+      response = await _authRepository.patientLogin(request);
+    } else if (role == AppConstants.caretakerRole) {
+      response = await _authRepository.caretakerLogin(request);
+    } else {
+      response = await _authRepository.sellerLogin(request);
+    }
+
+    await _handleLoginSuccess(response);
+
+    Get.offAllNamed(AppPages.dashboard);
+
   } catch (e) {
-    print('❌ Login error: $e');
-    Get.snackbar(
-      'Login Failed',
-      'Invalid credentials or network error',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
+    Get.snackbar("Login Failed", "Invalid credentials or network error");
+    log(e.toString());
   } finally {
     isLoading.value = false;
   }
 }
+
+Future<void> _handleLoginSuccess(LoginResponse response) async {
+  await _storage.write(AppConstants.tokenKey, response.token);
+  await _storage.write('user_id', response.userId);
+  await _storage.write('username', response.username);
+  await _storage.write(AppConstants.roleKey, response.role);
+
+  authToken.value = response.token;
+  userId.value = response.userId;
+  username.value = response.username;
+  userRole.value = response.role;
+  isLoggedIn.value = true;
+}
+
+// }
   Future<void> register() async {
     try {
       if (passwordController.text != confirmPasswordController.text) {
@@ -169,7 +214,7 @@ class AuthController extends GetxController {
                 role: response.role,
        );
       // After successful registration, auto login
-      await login(isPatient: selectedRole.value == AppConstants.patientRole);
+      await login(role: selectedRole.value);
       
     } catch (e) {
       log("register error: ${e.toString()}");
@@ -219,3 +264,4 @@ class AuthController extends GetxController {
     return null;
   }
 }
+

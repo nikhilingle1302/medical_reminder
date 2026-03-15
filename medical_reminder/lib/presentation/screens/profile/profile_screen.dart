@@ -1,7 +1,11 @@
 // lib/presentation/screens/profile/profile_screen.dart
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:medical_reminder/data/services/notification_service.dart';
 import 'package:medical_reminder/presentation/controllers/auth_controller.dart';
 import 'package:medical_reminder/presentation/widgets/custom_button.dart';
 
@@ -36,6 +40,32 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // In your settings or debug screen
+// ElevatedButton(
+//   onPressed: () async {
+//     final notificationService = Get.find<NotificationService>();
+//     await notificationService.debugFCM();
+//   },
+//   child: Text('Debug FCM'),
+// ),
+
+// ElevatedButton(
+//   onPressed: () async {
+//     try {
+//       final messaging = FirebaseMessaging.instance;
+//       final token = await messaging.getToken();
+//       Get.snackbar(
+//         'FCM Token',
+//         token ?? 'No token',
+//         duration: Duration(seconds: 10),
+//       );
+//       print('Token: $token');
+//     } catch (e) {
+//       Get.snackbar('Error', e.toString());
+//     }
+//   },
+//   child: Text('Get FCM Token'),
+// ),
                 // Profile Header
                 Center(
                   child: Column(
@@ -82,7 +112,8 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+                SizedBox(height: 10.h),
+                FcmTokenCard(),
                 SizedBox(height: 40.h),
                 
                 // Account Information
@@ -323,3 +354,71 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+class FcmTokenCard extends StatelessWidget {
+  FcmTokenCard({super.key});
+
+  final GetStorage storage = GetStorage();
+
+  @override
+  Widget build(BuildContext context) {
+    final String? fcmToken = storage.read<String>('fcm_token');
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'FCM Token',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            /// Token display
+            SelectableText(
+              fcmToken ?? 'Token not available',
+              maxLines: 3,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black87,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// Copy button
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.copy, size: 18),
+                label: const Text('Copy'),
+                onPressed: fcmToken == null
+                    ? null
+                    : () {
+                        Clipboard.setData(
+                          ClipboardData(text: fcmToken),
+                        );
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('FCM token copied to clipboard'),
+                          ),
+                        );
+                      },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

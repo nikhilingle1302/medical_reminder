@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:medical_reminder/core/constants/app_constants.dart';
 import 'package:medical_reminder/core/routes/app_pages.dart';
 import 'package:medical_reminder/presentation/controllers/auth_controller.dart';
 import 'package:medical_reminder/presentation/widgets/custom_button.dart';
@@ -73,69 +74,83 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: 60.h),
               
               // Login Type Selector
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Obx(() => GestureDetector(
-                        onTap: () => _isPatientLogin.value = true,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 12.h),
-                          decoration: BoxDecoration(
-                            color: _isPatientLogin.value
-                                ? const Color(0xFF2D9CDB)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Patient Login',
-                              style: TextStyle(
-                                color: _isPatientLogin.value
-                                    ? Colors.white
-                                    : Colors.grey,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )),
-                    ),
-                    Expanded(
-                      child: Obx(() => GestureDetector(
-                        onTap: () => _isPatientLogin.value = false,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(vertical: 12.h),
-                          decoration: BoxDecoration(
-                            color: !_isPatientLogin.value
-                                ? const Color(0xFF2D9CDB)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Caretaker Login',
-                              style: TextStyle(
-                                color: !_isPatientLogin.value
-                                    ? Colors.white
-                                    : Colors.grey,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )),
-                    ),
-                  ],
-                ),
-              ),
-              
+              // Container(
+              //   decoration: BoxDecoration(
+              //     color: const Color(0xFFF5F5F5),
+              //     borderRadius: BorderRadius.circular(10.r),
+              //   ),
+              //   child: Row(
+              //     children: [
+              //       Expanded(
+              //         child: Obx(() => GestureDetector(
+              //           onTap: () => _isPatientLogin.value = true,
+              //           child: Container(
+              //             padding: EdgeInsets.symmetric(vertical: 12.h),
+              //             decoration: BoxDecoration(
+              //               color: _isPatientLogin.value
+              //                   ? const Color(0xFF2D9CDB)
+              //                   : Colors.transparent,
+              //               borderRadius: BorderRadius.circular(10.r),
+              //             ),
+              //             child: Center(
+              //               child: Text(
+              //                 'Patient Login',
+              //                 style: TextStyle(
+              //                   color: _isPatientLogin.value
+              //                       ? Colors.white
+              //                       : Colors.grey,
+              //                   fontWeight: FontWeight.w600,
+              //                   fontSize: 14.sp,
+              //                 ),
+              //               ),
+              //             ),
+              //           ),
+              //         )),
+              //       ),
+              //       Expanded(
+              //         child: Obx(() => GestureDetector(
+              //           onTap: () => _isPatientLogin.value = false,
+              //           child: Container(
+              //             padding: EdgeInsets.symmetric(vertical: 12.h),
+              //             decoration: BoxDecoration(
+              //               color: !_isPatientLogin.value
+              //                   ? const Color(0xFF2D9CDB)
+              //                   : Colors.transparent,
+              //               borderRadius: BorderRadius.circular(10.r),
+              //             ),
+              //             child: Center(
+              //               child: Text(
+              //                 'Caretaker Login',
+              //                 style: TextStyle(
+              //                   color: !_isPatientLogin.value
+              //                       ? Colors.white
+              //                       : Colors.grey,
+              //                   fontWeight: FontWeight.w600,
+              //                   fontSize: 14.sp,
+              //                 ),
+              //               ),
+              //             ),
+              //           ),
+              //         )),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+Container(
+  decoration: BoxDecoration(
+    color: const Color(0xFFF5F5F5),
+    borderRadius: BorderRadius.circular(10.r),
+  ),
+  child: Row(
+    children: [
+      _buildRoleButton("Patient", AppConstants.patientRole),
+      _buildRoleButton("Caretaker", AppConstants.caretakerRole),
+      _buildRoleButton("Seller", AppConstants.sellerRole),
+    ],
+  ),
+),
+
+
               SizedBox(height: 32.h),
               
               // Username/Email Field
@@ -214,7 +229,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     );
                     return;
                   }
-                  _authController.login(isPatient: _isPatientLogin.value);
+                  //_authController.login(isPatient: _isPatientLogin.value);
+                  _authController.login(role: _authController.selectedRole.value);
+
                 },
               )),
               
@@ -255,6 +272,42 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+Widget _buildRoleButton(String title, String role) {
+  final AuthController _authController = Get.find<AuthController>();
+
+  return Expanded(
+    child: Obx(() {
+      final bool isSelected = _authController.selectedRole.value == role;
+
+      return GestureDetector(
+        onTap: () {
+          _authController.selectedRole.value = role;
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 12.h),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF2D9CDB)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: Center(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey,
+                fontWeight: FontWeight.w600,
+                fontSize: 14.sp,
+              ),
+            ),
+          ),
+        ),
+      );
+    }),
+  );
+}
+
+
 // class LoginScreen extends StatelessWidget {
 //   final AuthController _authController = Get.find();
 //   final RxBool _isPatientLogin = true.obs;
