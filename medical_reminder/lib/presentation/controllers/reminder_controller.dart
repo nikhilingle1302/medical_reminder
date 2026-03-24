@@ -25,8 +25,11 @@ class ReminderController extends GetxController {
   final Rx<Medicine?> selectedMedicine = Rx<Medicine?>(null);
   final TextEditingController dosageController = TextEditingController();
   final Rx<DateTime?> selectedTime = Rx<DateTime?>(null);
-  final TextEditingController firebasePatientIdController = TextEditingController();
-  final TextEditingController firebaseCaretakerIdController = TextEditingController();
+  final Rx<TimeOfDay?> selectedTimeOnly = Rx<TimeOfDay?>(null);
+final Rx<DateTime?> selectedStartDate = Rx<DateTime?>(null);
+final TextEditingController frequencyController = TextEditingController(text: "1");
+  // final TextEditingController firebasePatientIdController = TextEditingController();
+  // final TextEditingController firebaseCaretakerIdController = TextEditingController();
   
   @override
   void onInit() {
@@ -70,6 +73,7 @@ Future<void> fetchReminders() async {
   Future<void> fetchMedicines() async {
     try {
       final result = await _reminderRepository.getMedicines();
+      log("all medicines: ${result.toString()}");
       medicines.assignAll(result);
     } catch (e) {
       Get.snackbar(
@@ -156,74 +160,88 @@ Future<void> fetchReminders() async {
   //   }
   // }
   
-  Future<void> createReminder() async {
+Future<void> createReminder() async {
   try {
-    if (selectedMedicine.value == null || selectedTime.value == null) {
+    if (selectedMedicine.value == null ||
+        selectedTimeOnly.value == null ||
+        selectedStartDate.value == null) {
       Get.snackbar(
         'Error',
-        'Please select medicine and time',
+        'Please fill all required fields',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
       return;
     }
-    
+
     isLoading.value = true;
-    
-    // Format time for API
-    final formattedTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(selectedTime.value!);
-    final displayTime = DateFormat('h:mm a').format(selectedTime.value!);
-    
-    final request = {
-      "medicine_id": selectedMedicine.value!.id,
-      "dosage": dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
-      "reminder_time": formattedTime,
-      "firebase_patient_id": firebasePatientIdController.text.isNotEmpty 
-          ? firebasePatientIdController.text 
-          : "++",
-    };
-    
-    log("create reminder request: ${request.toString()}");
+
+    final time = selectedTimeOnly.value!;
+    final startDate = selectedStartDate.value!;
+
+    // ✅ Format time (HH:mm:ss)
+    final formattedTime =
+        "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00";
+
+    // ✅ Format date (yyyy-MM-dd)
+    final formattedDate =
+        DateFormat('yyyy-MM-dd').format(startDate);
+
+    final frequency =
+        int.tryParse(frequencyController.text.trim()) ?? 1;
+
+final request = {
+  "medicine": selectedMedicine.value!.id,
+  "reminder_time": formattedTime,       // already computed above as "HH:mm:ss"
+  "frequency_per_day": frequency,
+  "start_date": formattedDate,          // already computed above as "yyyy-MM-dd"
+};
+
+    log("✅ NEW create reminder request: $request");
+
     final response = await _reminderRepository.createReminder(request);
-    log("create reminder response: ${response.toString()}");
-    
-    if (response['message'] != null) {
-      // ✅ SHOW IMMEDIATE NOTIFICATION (Solution 2)
-      
+
+    if (response != null) {
+      /// ✅ SHOW IMMEDIATE CONFIRMATION
       await notificationService.showImmediateReminderCreatedNotification(
         medicineName: selectedMedicine.value!.name,
-        dosage: dosageController.text.isNotEmpty ? dosageController.text : '1 tablet',
-        scheduledTime: displayTime,
+        dosage: "$frequency times/day",
+        scheduledTime: formattedTime,
       );
+
+      /// ✅ SCHEDULE LOCAL NOTIFICATION
+      final scheduledDateTime = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+        time.hour,
+        time.minute,
+      );
+
       await notificationService.scheduleReminderNotificationFromDateTime(
-  id: response['id'], // or generate unique id if API doesn't return
-  medicineName: selectedMedicine.value!.name,
-  dosage: dosageController.text.isNotEmpty 
-      ? dosageController.text 
-      : '1 tablet',
-  scheduledDateTime: selectedTime.value!,
-);
-      
-      
-      // Clear form
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        medicineName: selectedMedicine.value!.name,
+        dosage: "$frequency times/day",
+        scheduledDateTime: scheduledDateTime,
+      );
+
+      /// ✅ CLEAR FORM
       selectedMedicine.value = null;
+      selectedTimeOnly.value = null;
+      selectedStartDate.value = null;
       dosageController.clear();
-      selectedTime.value = null;
-      firebasePatientIdController.clear();
-      firebaseCaretakerIdController.clear();
-      
-      // Refresh list
+      frequencyController.clear();
+
       await fetchReminders();
-      
+
       Get.back();
+
       Get.snackbar(
         'Success',
         'Reminder created successfully',
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
-    } else {
-      throw Exception('Failed to create reminder');
     }
   } catch (e) {
     Get.snackbar(
@@ -235,46 +253,69 @@ Future<void> fetchReminders() async {
   } finally {
     isLoading.value = false;
   }
-}
-  Future<void> markAsTaken(int reminderId) async {
-    try {
-      final response = await _reminderRepository.markReminderTaken(reminderId);
+} 
+  // Future<void> markAsTaken(int reminderId) async {
+  //   try {
+  //     final response = await _reminderRepository.markReminderTaken(reminderId);
       
-      if (response.status?.toLowerCase() == 'success') {
-        // Update local list
-        final index = reminders.indexWhere((r) => r.id == reminderId);
-        if (index != -1) {
-          // Create updated reminder
-          final updatedReminder = Reminder(
-            id: reminders[index].id,
-            medicineId: reminders[index].medicineId,
-            firebasePatientId: reminders[index].firebasePatientId,
-            //firebaseCaretakerId: reminders[index].firebaseCaretakerId,
-            medicineName: reminders[index].medicineName,
-            dosage: reminders[index].dosage,
-            reminderTime: reminders[index].reminderTime,
-            isTaken: true,
-            //isSent: false,
-          );
-          reminders[index] = updatedReminder;
-        }
+  //     if (response.status?.toLowerCase() == 'success') {
+  //       // Update local list
+  //       final index = reminders.indexWhere((r) => r.id == reminderId);
+  //       if (index != -1) {
+  //         // Create updated reminder
+  //         final updatedReminder = Reminder(
+  //           id: reminders[index].id,
+  //           medicineId: reminders[index].medicineId,
+  //           firebasePatientId: reminders[index].firebasePatientId,
+  //           //firebaseCaretakerId: reminders[index].firebaseCaretakerId,
+  //           medicineName: reminders[index].medicineName,
+  //           dosage: reminders[index].dosage,
+  //           reminderTime: reminders[index].reminderTime,
+  //           isTaken: true,
+  //           //isSent: false,
+  //         );
+  //         reminders[index] = updatedReminder;
+  //       }
         
-        Get.snackbar(
-          'Success',
-          'Reminder marked as taken',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-      }
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to mark as taken: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    }
+  //       Get.snackbar(
+  //         'Success',
+  //         'Reminder marked as taken',
+  //         backgroundColor: Colors.green,
+  //         colorText: Colors.white,
+  //       );
+  //     }
+  //   } catch (e) {
+  //     Get.snackbar(
+  //       'Error',
+  //       'Failed to mark as taken: ${e.toString()}',
+  //       backgroundColor: Colors.red,
+  //       colorText: Colors.white,
+  //     );
+  //   }
+  // }
+  Future<void> markAsTaken(int reminderId) async {
+  try {
+    await _reminderRepository.markReminderTaken(reminderId);
+
+    // ✅ Just refresh from API instead of patching local model
+    await fetchReminders();
+
+    Get.snackbar(
+      'Success',
+      'Reminder marked as taken',
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+    );
+  } catch (e) {
+    Get.snackbar(
+      'Error',
+      'Failed to mark as taken: ${e.toString()}',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
   }
+}
+  
   
   Future<void> getDueReminders() async {
     try {
@@ -299,21 +340,17 @@ Future<void> fetchReminders() async {
     }
   }
   
-  List<Reminder> getTodayReminders() {
-    final now = DateTime.now();
-    final today = DateFormat('yyyy-MM-dd').format(now);
-    
-    return reminders.where((reminder) {
-      // Parse the reminder time string
-      try {
-        final reminderDate = DateFormat('yyyy-MM-dd HH:mm:ss').parse(reminder.reminderTime);
-        final reminderDateStr = DateFormat('yyyy-MM-dd').format(reminderDate);
-        return reminderDateStr == today && !reminder.isTaken;
-      } catch (e) {
-        return false;
-      }
-    }).toList();
-  }
+ List<Reminder> getTodayReminders() {
+  final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+  return reminders.where((reminder) {
+    // ✅ API no longer has isTaken, filter by startDate instead
+    return reminder.startDate == today ||
+        (reminder.startDate.compareTo(today) <= 0 &&
+            (reminder.endDate == null ||
+                reminder.endDate!.compareTo(today) >= 0));
+  }).toList();
+}
   
   List<Reminder> getUpcomingReminders() {
     final now = DateTime.now();
@@ -321,7 +358,7 @@ Future<void> fetchReminders() async {
     return reminders.where((reminder) {
       try {
         final reminderDate = DateFormat('yyyy-MM-dd HH:mm:ss').parse(reminder.reminderTime);
-        return reminderDate.isAfter(now) && !reminder.isTaken;
+        return reminderDate.isAfter(now);
       } catch (e) {
         return false;
       }

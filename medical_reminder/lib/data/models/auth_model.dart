@@ -5,41 +5,22 @@ part 'auth_model.g.dart';
 // User Model
 @JsonSerializable()
 class User {
-  @JsonKey(name: 'user_id')
-  final int? id;
-  @JsonKey(name: 'username')
+  final int id;
   final String username;
-  final String? password;
-  @JsonKey(name: 'role')
-  final String? role;
-  @JsonKey(name: 'token')
-  final String? token;
+  final String email;
+  final String role;
 
   User({
-    this.id,
+    required this.id,
     required this.username,
-    this.password,
-    this.role,
-    this.token
+    required this.email,
+    required this.role,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  factory User.fromJson(Map<String, dynamic> json) =>
+      _$UserFromJson(json);
+
   Map<String, dynamic> toJson() => _$UserToJson(this);
-
-  User copyWith({
-    int? id,
-    String? username,
-    String? password,
-    String? role,
-  }) {
-    return User(
-      id: id ?? this.id,
-      username: username ?? this.username,
-      password: password ?? this.password,
-      role: role ?? this.role,
-    );
-  }
-
 }
 
 // Login Request Model
@@ -50,7 +31,6 @@ class LoginRequest {
   @JsonKey(name: 'password')
   final String password;
   
-
   LoginRequest({
     required this.username,
     required this.password,
@@ -66,43 +46,77 @@ class LoginRequest {
 @JsonSerializable()
 class RegisterRequest {
   final String username;
+  final String email;
   final String password;
   final String role;
 
   RegisterRequest({
     required this.username,
+    required this.email,
     required this.password,
     required this.role,
   });
 
   factory RegisterRequest.fromJson(Map<String, dynamic> json) =>
       _$RegisterRequestFromJson(json);
+
   Map<String, dynamic> toJson() => _$RegisterRequestToJson(this);
 }
 
 // Login Response Model
+
 @JsonSerializable()
 class LoginResponse {
-  @JsonKey(name: 'token')
-  final String token;
-  @JsonKey(name: 'message')
-  final String message;
-  @JsonKey(name: 'user_id')
-  final int userId;
-  @JsonKey(name: 'username')
-  final String username;
-  @JsonKey(name: 'role')
-  final String role;
+  @JsonKey(name: 'user')
+  final User user;
+
+  @JsonKey(name: 'tokens')
+  final TokenData tokens;  // ✅ nested under 'tokens', not at root
 
   LoginResponse({
-    required this.token,
-    required this.message,
-    required this.userId,
-    required this.username,
-    required this.role,
+    required this.user,
+    required this.tokens,
   });
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) =>
       _$LoginResponseFromJson(json);
+
   Map<String, dynamic> toJson() => _$LoginResponseToJson(this);
+}
+@JsonSerializable()
+class RegisterResponse {
+  @JsonKey(name: 'user')
+  final User user;
+
+  @JsonKey(name: 'tokens')
+  final TokenData tokens;
+
+  RegisterResponse({
+    required this.user,
+    required this.tokens,
+  });
+
+  factory RegisterResponse.fromJson(Map<String, dynamic> json) =>
+      _$RegisterResponseFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RegisterResponseToJson(this);
+}
+
+@JsonSerializable()
+class TokenData {
+  @JsonKey(name: 'access')
+  final String access;
+
+  @JsonKey(name: 'refresh')
+  final String refresh;
+
+  TokenData({
+    required this.access,
+    required this.refresh,
+  });
+
+  factory TokenData.fromJson(Map<String, dynamic> json) =>
+      _$TokenDataFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TokenDataToJson(this);
 }

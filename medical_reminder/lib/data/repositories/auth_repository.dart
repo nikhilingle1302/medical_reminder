@@ -6,12 +6,14 @@ class AuthRepository {
 
   AuthRepository(this._apiService);
 
-  Future<User> register(RegisterRequest request) async {
+  Future<RegisterResponse> register(RegisterRequest request) async {
     return await _apiService.register(request);
   }
-
+Future<LoginResponse> login(LoginRequest request) async {
+    return await _apiService.login(request);
+  }
   Future<LoginResponse> patientLogin(LoginRequest request) async {
-    return await _apiService.patientLogin(request);
+    return await _apiService.login(request);
   }
 
   Future<LoginResponse> caretakerLogin(LoginRequest request) async {
@@ -19,8 +21,12 @@ class AuthRepository {
   }
 
   Future<LoginResponse> sellerLogin(LoginRequest request) async {
-  return await _apiService.sellerLogin(request);
+  return await _apiService.login(request);
 }
+
+  saveFcmToken(Map<String, String> map) {
+    return _apiService.saveFcmToken(map);
+  }
 
 }
 // class AuthRepository {

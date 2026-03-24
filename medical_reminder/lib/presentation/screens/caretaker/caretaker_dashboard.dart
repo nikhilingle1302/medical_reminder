@@ -108,43 +108,52 @@ class _CaretakerDashboardScreenState
                 ),
               ),
               SizedBox(width: 12.w),
-              Obx(
-                ()=> Expanded(
-                  child: _buildStatCard(
-                    title: 'Active Reminders',
-                    value:reminderController.reminders.where((r) => !r.isTaken).length.toString(),
-                    icon: Icons.notifications_active,
-                    color: const Color(0xFF4CAF50),
-                  ),
+            Obx(
+              () => Expanded(
+                child: _buildStatCard(
+                  title: 'Active Reminders',
+                  value: reminderController.reminders.where((r) {
+                    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                    final afterStart = r.startDate.compareTo(today) <= 0;
+                    final beforeEnd = r.endDate == null || r.endDate!.compareTo(today) >= 0;
+                    return afterStart && beforeEnd;
+                  }).length.toString(),
+                  icon: Icons.notifications_active,
+                  color: const Color(0xFF4CAF50),
                 ),
               ),
+            ),
             ],
           ),
           
           SizedBox(height: 16.h),
           
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Due Today',
-                  value: reminderController.getTodayReminders().length.toString(),
-                  icon: Icons.access_time,
-                  color: const Color(0xFFFF9800),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Completed',
-                  value: reminderController.reminders.where((r) => r.isTaken).length.toString(),
-                  icon: Icons.check_circle,
-                  color: const Color(0xFF9C27B0),
-                ),
-              ),
-            ],
-          ),
-          
+Row(
+  children: [
+    Expanded(
+      child: _buildStatCard(
+        title: 'Due Today',
+        value: reminderController.getTodayReminders().length.toString(),
+        icon: Icons.access_time,
+        color: const Color(0xFFFF9800),
+      ),
+    ),
+    SizedBox(width: 12.w),
+    Expanded(
+      child: _buildStatCard(
+        // ✅ "Completed" = reminders whose end_date has passed
+        title: 'Completed',
+        value: reminderController.reminders.where((r) {
+          if (r.endDate == null) return false;
+          final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+          return r.endDate!.compareTo(today) < 0;
+        }).length.toString(),
+        icon: Icons.check_circle,
+        color: const Color(0xFF9C27B0),
+      ),
+    ),
+  ],
+),
           SizedBox(height: 24.h),
           
           // Quick Actions

@@ -17,6 +17,10 @@ class Medicine {
   final String? expiry;
   @JsonKey(name: 'category')
   final String? category;
+  @JsonKey(name: 'description')
+  final String? description;
+  @JsonKey(name: '"requires_prescription"')
+  final bool? requiresPrescription;
 
   Medicine({
     required this.id,
@@ -25,6 +29,8 @@ class Medicine {
     this.stock,
     this.expiry,
     this.category,
+    this.requiresPrescription,
+    this.description,
   });
 
   factory Medicine.fromJson(Map<String, dynamic> json) =>

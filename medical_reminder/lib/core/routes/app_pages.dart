@@ -11,6 +11,7 @@ import 'package:medical_reminder/presentation/screens/pharmacy/pharmacy_dashboar
 import 'package:medical_reminder/presentation/screens/profile/profile_screen.dart';
 import 'package:medical_reminder/presentation/screens/reminders/add_reminder_screen.dart';
 import 'package:medical_reminder/presentation/screens/reminders/reminder_details_screen.dart';
+import 'package:medical_reminder/presentation/widgets/order_history_screen.dart';
 
 import '../../presentation/screens/auth/register_screen.dart';
 
@@ -24,6 +25,7 @@ abstract class AppPages {
   static const String profile = '/profile';
   static const String chatBot = '/chat-bot';
   static const String bmiCalculator = '/bmi-calculator';
+  static const String orderHistory = '/order-history';
 
   static final routes = [
     GetPage(
@@ -84,5 +86,6 @@ GetPage(
       page: () => CalculatorScreen(),
       transition: Transition.rightToLeft,
     ),
+    GetPage(name: '/order-history', page: () => OrderHistoryScreen()),
   ];
 }

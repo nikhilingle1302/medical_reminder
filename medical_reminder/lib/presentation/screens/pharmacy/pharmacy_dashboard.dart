@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:medical_reminder/data/models/medicine_model.dart';
+import 'package:medical_reminder/data/models/order_model.dart';
+import 'package:medical_reminder/data/models/search_medicien.dart';
+import 'package:medical_reminder/presentation/controllers/auth_controller.dart';
 import 'package:medical_reminder/presentation/controllers/pharmacy_controller.dart';
 
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
 
@@ -16,781 +19,500 @@ class SellerDashboardScreen extends StatefulWidget {
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   final PharmacyController controller = Get.find<PharmacyController>();
+  final AuthController _authController = Get.find<AuthController>();
 
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController companyController = TextEditingController();
-  final TextEditingController categoryController = TextEditingController();
-  final TextEditingController quantityController = TextEditingController();
-  final TextEditingController expiryController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
-  final TextEditingController sellQtyController = TextEditingController();
+  // ── Theme colors ──────────────────────────────────────────
+  static const _primary = Color(0xFF1A73E8);
+  static const _surface = Color(0xFFF8FAFF);
+  static const _cardBg = Colors.white;
+  static const _textPrimary = Color(0xFF1C1C2E);
+  static const _textSecondary = Color(0xFF8E8E9A);
 
   @override
   void initState() {
     super.initState();
     controller.fetchMedicines();
+    controller.fetchOrders();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          "Seller Dashboard",
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person_outline,
-                  color: Colors.blue,
-                  size: 20,
-                ),
-              ),
-              onPressed: () {
-                Get.toNamed('/profile');
-              },
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddMedicineSheet(context),
-        backgroundColor: Colors.blue,
-        elevation: 4,
-        icon: const Icon(Icons.add_circle_outline),
-        label: const Text(
-          "Add Medicine",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-      ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "Loading medicines...",
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (controller.medicines.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.inventory_2_outlined,
-                  size: 80,
-                  color: Colors.grey[300],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "No medicines available",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Tap the button below to add your first medicine",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: controller.fetchMedicines,
-          color: Colors.blue,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Summary Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue, Colors.blue.shade700],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStatItem(
-                      "Total Items",
-                      "${controller.medicines.length}",
-                      Icons.inventory_2_outlined,
-                    ),
-                    Container(
-                      height: 40,
-                      width: 1,
-                      color: Colors.white.withOpacity(0.3),
-                    ),
-                    _buildStatItem(
-                      "In Stock",
-                      "${controller.medicines.where((m) => (m.stock ?? 0) > 0).length}",
-                      Icons.check_circle_outline,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Medicines List Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  "Medicines Inventory",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Medicines List
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                  itemCount: controller.medicines.length,
-                  itemBuilder: (context, index) {
-                    final medicine = controller.medicines[index];
-                    final isLowStock = (medicine.stock ?? 0) < 10;
-                    final isExpired = medicine.expiry != null &&
-                        DateTime.tryParse(medicine.expiry!)
-                            ?.isBefore(DateTime.now()) ==
-                            true;
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _showMedicineDetails(context, medicine),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Header Row
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          Icons.medication,
-                                          color: Colors.blue.shade700,
-                                          size: 24,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              medicine.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 16,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              medicine.company ?? "-",
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Sell Button
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.point_of_sale,
-                                            color: Colors.green,
-                                          ),
-                                          onPressed: () =>
-                                              _showSellDialog(context, medicine),
-                                          tooltip: "Sell Medicine",
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-
-                                  // Divider
-                                  Divider(
-                                    color: Colors.grey[200],
-                                    height: 1,
-                                  ),
-                                  const SizedBox(height: 12),
-
-                                  // Info Grid
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildInfoChip(
-                                          Icons.category_outlined,
-                                          medicine.category ?? "-",
-                                          Colors.purple,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: _buildInfoChip(
-                                          Icons.inventory_outlined,
-                                          "${medicine.stock ?? 0} units",
-                                          isLowStock ? Colors.orange : Colors.blue,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildInfoChip(
-                                          Icons.calendar_today_outlined,
-                                          medicine.expiry ?? "-",
-                                          isExpired ? Colors.red : Colors.teal,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      // Expanded(
-                                      //   child: _buildInfoChip(
-                                      //     Icons.currency_rupee,
-                                      //     "${medicine.price ?? "0"}",
-                                      //     Colors.green,
-                                      //   ),
-                                      // ),
-                                    ],
-                                  ),
-
-                                  // Warning Badges
-                                  if (isLowStock || isExpired) ...[
-                                    const SizedBox(height: 12),
-                                    Wrap(
-                                      spacing: 8,
-                                      children: [
-                                        if (isLowStock)
-                                          _buildWarningBadge(
-                                            "Low Stock",
-                                            Colors.orange,
-                                          ),
-                                        if (isExpired)
-                                          _buildWarningBadge(
-                                            "Expired",
-                                            Colors.red,
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  // =====================================================
-  // UI Helper Widgets
-  // =====================================================
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWarningBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.warning_amber_rounded, size: 14, color: Colors.white),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // =====================================================
-  // Medicine Details Bottom Sheet
-  // =====================================================
-
-  void _showMedicineDetails(BuildContext context, Medicine medicine) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.medication,
-                    color: Colors.blue.shade700,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        medicine.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        medicine.company ?? "-",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildDetailRow("Category", medicine.category ?? "-"),
-            _buildDetailRow("Stock", "${medicine.stock ?? 0} units"),
-            //_buildDetailRow("Price", "₹${medicine. ?? "0"}"),
-            _buildDetailRow("Expiry Date", medicine.expiry ?? "-"),
-            // if (medicine.shopName != null)
-            //   _buildDetailRow("Shop", medicine.shopName!),
-            // if (medicine.location != null)
-            //   _buildDetailRow("Location", medicine.location!),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Get.back();
-                  _showSellDialog(context, medicine);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.point_of_sale),
-                label: const Text(
-                  "Sell This Medicine",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // =====================================================
-  // ADD MEDICINE
-  // =====================================================
-
-  void _showAddMedicineSheet(BuildContext context) {
-    nameController.clear();
-    companyController.clear();
-    categoryController.clear();
-    quantityController.clear();
-    expiryController.clear();
-    priceController.clear();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            // Handle Bar
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.add_circle_outline,
-                      color: Colors.blue.shade700,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    "Add New Medicine",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(color: Colors.grey[200], height: 1),
-
-            // Form
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+      backgroundColor: _surface,
+      appBar: _buildAppBar(),
+      floatingActionButton: _buildFAB(),
+      // ✅ Blank screen fix — no Obx wrapping entire body
+      body: RefreshIndicator(
+        color: _primary,
+        onRefresh: () async {
+          await controller.fetchMedicines();
+          await controller.fetchOrders();
+        },
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildModernTextField(
-                      controller: nameController,
-                      label: "Medicine Name",
-                      icon: Icons.medication_outlined,
-                      hint: "e.g., Paracetamol",
+                    _buildStatsRow(),
+                    const SizedBox(height: 24),
+                    _buildSectionHeader(
+                      "Medicines",
+                      Icons.medication_outlined,
+                      _primary,
                     ),
-                    const SizedBox(height: 16),
-
-                    _buildModernTextField(
-                      controller: companyController,
-                      label: "Company",
-                      icon: Icons.business_outlined,
-                      hint: "e.g., Cipla",
-                    ),
-                    const SizedBox(height: 16),
-
-                    _buildModernTextField(
-                      controller: categoryController,
-                      label: "Category",
-                      icon: Icons.category_outlined,
-                      hint: "e.g., Tablet, Syrup",
-                    ),
-                    const SizedBox(height: 16),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildModernTextField(
-                            controller: quantityController,
-                            label: "Stock Quantity",
-                            icon: Icons.inventory_2_outlined,
-                            hint: "e.g., 100",
-                            isNumber: true,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildModernTextField(
-                            controller: priceController,
-                            label: "Price (₹)",
-                            icon: Icons.currency_rupee,
-                            hint: "e.g., 50",
-                            isNumber: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Date Picker Field
-                    GestureDetector(
-                      onTap: () async {
-                        DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now().add(const Duration(days: 365)),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2100),
-                          builder: (context, child) {
-                            return Theme(
-                              data: Theme.of(context).copyWith(
-                                colorScheme: ColorScheme.light(
-                                  primary: Colors.blue.shade700,
-                                ),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-
-                        if (picked != null) {
-                          expiryController.text =
-                              "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
-                        }
-                      },
-                      child: AbsorbPointer(
-                        child: _buildModernTextField(
-                          controller: expiryController,
-                          label: "Expiry Date",
-                          icon: Icons.calendar_today_outlined,
-                          hint: "Select expiry date",
-                          readOnly: true,
-                          suffixIcon: Icons.arrow_drop_down,
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
             ),
 
-            // Bottom Action Button
+            // ── Medicines List ──────────────────────────
+            Obx(() {
+              if (controller.isLoading.value && controller.medicines.isEmpty) {
+                return const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              }
+              if (controller.medicines.isEmpty) {
+                return SliverToBoxAdapter(child: _buildEmptyState(
+                  icon: Icons.medication_outlined,
+                  message: "No medicines added yet",
+                ));
+              }
+              return SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: _buildMedicineCard(controller.medicines[i]),
+                  ),
+                  childCount: controller.medicines.length,
+                ),
+              );
+            }),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: _buildSectionHeader(
+                  "Pending Orders",
+                  Icons.shopping_bag_outlined,
+                  Colors.orange,
+                ),
+              ),
+            ),
+
+            // ── Orders List ─────────────────────────────
+            Obx(() {
+              if (controller.isLoading.value && controller.orders.isEmpty) {
+                return const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              }
+              if (controller.orders.isEmpty) {
+                return SliverToBoxAdapter(child: _buildEmptyState(
+                  icon: Icons.shopping_bag_outlined,
+                  message: "No orders yet",
+                ));
+              }
+              return SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: _buildOrderCard(controller.orders[i]),
+                  ),
+                  childCount: controller.orders.length,
+                ),
+              );
+            }),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── AppBar ──────────────────────────────────────────────────
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: _cardBg,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      title: Obx(() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Seller Dashboard",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _textPrimary,
+            ),
+          ),
+          Text(
+            _authController.username.value,
+            style: const TextStyle(
+              fontSize: 12,
+              color: _textSecondary,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      )),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded, color: _primary),
+          onPressed: () {
+            controller.fetchMedicines();
+            controller.fetchOrders();
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+          onPressed: _showLogoutConfirmation,
+        ),
+        const SizedBox(width: 4),
+      ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(height: 1, color: const Color(0xFFEEEEF5)),
+      ),
+    );
+  }
+
+  // ── FAB ─────────────────────────────────────────────────────
+  Widget _buildFAB() {
+    return FloatingActionButton.extended(
+      onPressed: _showMainActions,
+      backgroundColor: _primary,
+      icon: const Icon(Icons.add_rounded, color: Colors.white),
+      label: const Text(
+        "Add",
+        style: TextStyle(
+            color: Colors.white, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  // ── Stats Row ───────────────────────────────────────────────
+  Widget _buildStatsRow() {
+    return Obx(() {
+      final pendingCount =
+          controller.orders.where((o) => o.status == "pending").length;
+      final confirmedCount =
+          controller.orders.where((o) => o.status == "confirmed").length;
+
+      return Row(
+        children: [
+          _buildStatChip(
+            label: "Medicines",
+            value: controller.medicines.length.toString(),
+            icon: Icons.medication_outlined,
+            color: _primary,
+          ),
+          const SizedBox(width: 10),
+          _buildStatChip(
+            label: "Pending",
+            value: pendingCount.toString(),
+            icon: Icons.hourglass_top_rounded,
+            color: Colors.orange,
+          ),
+          const SizedBox(width: 10),
+          _buildStatChip(
+            label: "Confirmed",
+            value: confirmedCount.toString(),
+            icon: Icons.check_circle_outline_rounded,
+            color: Colors.green,
+          ),
+        ],
+      );
+    });
+  }
+
+ Widget _buildStatChip({
+  required String label,
+  required String value,
+  required IconData icon,
+  required Color color,
+}) {
+  return Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min, // ✅ don't force full width
+        children: [
+          Icon(icon, color: color, size: 18), // ✅ slightly smaller
+          const SizedBox(width: 6),           // ✅ tighter gap
+          Flexible(                            // ✅ let text shrink/wrap
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,             // ✅ reduced from 18
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: _textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis, // ✅ truncate if needed
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+  // ── Section Header ──────────────────────────────────────────
+  Widget _buildSectionHeader(String title, IconData icon, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Medicine Card ───────────────────────────────────────────
+  Widget _buildMedicineCard(Medicine m) {
+    final isRx = m.requiresPrescription == true;
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: _primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.medication_rounded,
+              color: _primary, size: 22),
+        ),
+        title: Text(
+          m.name ?? "-",
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: _textPrimary,
+          ),
+        ),
+        subtitle: m.description != null && m.description!.isNotEmpty
+            ? Text(
+                m.description!,
+                style: const TextStyle(
+                    fontSize: 12, color: _textSecondary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            : null,
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: isRx
+                ? Colors.orange.withOpacity(0.1)
+                : Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isRx
+                  ? Colors.orange.withOpacity(0.3)
+                  : Colors.green.withOpacity(0.3),
+            ),
+          ),
+          child: Text(
+            isRx ? "Rx" : "OTC",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: isRx ? Colors.orange : Colors.green,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Order Card ──────────────────────────────────────────────
+  Widget _buildOrderCard(OrderModel order) {
+    final isPending = order.status == "pending";
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: isPending
+            ? Border.all(color: Colors.orange.withOpacity(0.3))
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            // Icon
             Container(
-              padding: const EdgeInsets.all(20),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
+                color: isPending
+                    ? Colors.orange.withOpacity(0.08)
+                    : Colors.green.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isPending
+                    ? Icons.hourglass_top_rounded
+                    : Icons.check_circle_outline_rounded,
+                color: isPending ? Colors.orange : Colors.green,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    order.medicineName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: _textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "${order.patientName}  •  Qty: ${order.quantity}",
+                    style: const TextStyle(
+                        fontSize: 12, color: _textSecondary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    order.storeName,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: _primary.withOpacity(0.7)),
                   ),
                 ],
               ),
-              child: SafeArea(
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _handleAddMedicine(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      "Add Medicine",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+            ),
+
+            // Action
+            if (isPending)
+              TextButton(
+                onPressed: () => controller.confirmOrder(order.id),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.orange.withOpacity(0.1),
+                  foregroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  "Confirm",
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  order.status.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.green,
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Empty State ─────────────────────────────────────────────
+  Widget _buildEmptyState(
+      {required IconData icon, required String message}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon, size: 40, color: Colors.grey.shade300),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
             ),
           ],
         ),
@@ -798,296 +520,353 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     );
   }
 
-  void _handleAddMedicine() {
-    final name = nameController.text.trim();
-    final company = companyController.text.trim();
-    final category = categoryController.text.trim();
-    final quantity = int.tryParse(quantityController.text) ?? 0;
-    final price = int.tryParse(priceController.text) ?? 0;
-    final expiry = expiryController.text.trim();
-
-    if (name.isEmpty ||
-        company.isEmpty ||
-        category.isEmpty ||
-        quantity <= 0 ||
-        expiry.isEmpty) {
-      Get.snackbar(
-        "Validation Error",
-        "Please fill all fields correctly",
-        backgroundColor: Colors.red.shade400,
-        colorText: Colors.white,
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-        snackPosition: SnackPosition.TOP,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-      return;
-    }
-
-    controller.addSellerMedicine({
-      "name": name,
-      "company": company,
-      "category": category,
-      "quantity": quantity,
-      "price": price,
-      "expiry_date": expiry,
-    });
-
-    Get.back();
-
-    // Success feedback
-    Get.snackbar(
-      "Success",
-      "Medicine added successfully!",
-      backgroundColor: Colors.green.shade400,
-      colorText: Colors.white,
-      icon: const Icon(Icons.check_circle_outline, color: Colors.white),
-      snackPosition: SnackPosition.TOP,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
-  }
-
-  // =====================================================
-  // SELL MEDICINE
-  // =====================================================
-
-  void _showSellDialog(BuildContext context, Medicine medicine) {
-    sellQtyController.clear();
-
-    showDialog(
+  // ── Bottom Sheet ────────────────────────────────────────────
+  void _showMainActions() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.point_of_sale,
-                  color: Colors.green.shade700,
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Title
-              Text(
-                "Sell ${medicine.name}",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-
-              // Available Stock
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.inventory_outlined,
-                      size: 18,
-                      color: Colors.blue.shade700,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Available: ${medicine.stock ?? 0} units",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Quantity Input
-              _buildModernTextField(
-                controller: sellQtyController,
-                label: "Quantity to Sell",
-                icon: Icons.shopping_cart_outlined,
-                hint: "Enter quantity",
-                isNumber: true,
-              ),
-              const SizedBox(height: 24),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Get.back(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        "Cancel",
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _handleSellMedicine(medicine),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        "Sell",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+                _buildSheetItem(
+                  icon: Icons.medication_outlined,
+                  color: _primary,
+                  title: "Add Medicine",
+                  subtitle: "Register a new medicine",
+                  onTap: () { Get.back(); _showAddMedicineDialog(); },
+                ),
+                _buildSheetItem(
+                  icon: Icons.store_outlined,
+                  color: Colors.teal,
+                  title: "Create Store",
+                  subtitle: "Set up a new pharmacy store",
+                  onTap: () { Get.back(); _showCreateStoreDialog(); },
+                ),
+                _buildSheetItem(
+                  icon: Icons.inventory_2_outlined,
+                  color: Colors.purple,
+                  title: "Add Inventory",
+                  subtitle: "Add stock to your store",
+                  onTap: () { Get.back(); _showAddInventoryDialog(); },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _handleSellMedicine(Medicine medicine) {
-    final qty = int.tryParse(sellQtyController.text) ?? 0;
-
-    if (qty <= 0) {
-      Get.snackbar(
-        "Invalid Quantity",
-        "Please enter a valid quantity",
-        backgroundColor: Colors.red.shade400,
-        colorText: Colors.white,
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-        snackPosition: SnackPosition.TOP,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-      return;
-    }
-
-    if (qty > (medicine.stock ?? 0)) {
-      Get.snackbar(
-        "Insufficient Stock",
-        "Only ${medicine.stock ?? 0} units available",
-        backgroundColor: Colors.orange.shade400,
-        colorText: Colors.white,
-        icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
-        snackPosition: SnackPosition.TOP,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-      );
-      return;
-    }
-
-    controller.sellMedicine(medicine.id, qty);
-    Get.back();
-
-    // Success feedback
-    Get.snackbar(
-      "Sale Successful",
-      "$qty units of ${medicine.name} sold",
-      backgroundColor: Colors.green.shade400,
-      colorText: Colors.white,
-      icon: const Icon(Icons.check_circle_outline, color: Colors.white),
-      snackPosition: SnackPosition.TOP,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 3),
+  Widget _buildSheetItem({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(title,
+          style: const TextStyle(
+              fontWeight: FontWeight.w600, fontSize: 14)),
+      subtitle: Text(subtitle,
+          style:
+              const TextStyle(fontSize: 12, color: _textSecondary)),
     );
   }
 
-  // =====================================================
-  // Reusable Modern TextField
-  // =====================================================
+  // ── Dialogs (functionality unchanged) ──────────────────────
+  void _showAddMedicineDialog() {
+    final name = TextEditingController();
+    final desc = TextEditingController();
+    bool isRx = false;
 
-  Widget _buildModernTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? hint,
-    bool isNumber = false,
-    bool readOnly = false,
-    IconData? suffixIcon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
-          ),
+    Get.defaultDialog(
+      title: "Add Medicine",
+      content: StatefulBuilder(
+        builder: (_, setState) => Column(
+          children: [
+            TextField(
+                controller: name,
+                decoration:
+                    const InputDecoration(hintText: "Name")),
+            const SizedBox(height: 8),
+            TextField(
+                controller: desc,
+                decoration: const InputDecoration(
+                    hintText: "Description")),
+            Row(
+              children: [
+                Checkbox(
+                    value: isRx,
+                    onChanged: (v) => setState(() => isRx = v!)),
+                const Text("Requires Prescription"),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          readOnly: readOnly,
-          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            prefixIcon: Icon(icon, color: Colors.blue.shade700, size: 20),
-            suffixIcon: suffixIcon != null
-                ? Icon(suffixIcon, color: Colors.grey[400])
-                : null,
-            filled: true,
-            fillColor: Colors.grey[50],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      onConfirm: () {
+        controller.createMedicine({
+          "name": name.text.trim(),
+          "description": desc.text.trim(),
+          "requires_prescription": isRx.toString(),
+        });
+        Get.back();
+      },
+      textConfirm: "Add",
+      textCancel: "Cancel",
+      confirmTextColor: Colors.white,
+    );
+  }
+
+  void _showCreateStoreDialog() {
+    final name = TextEditingController();
+    final address = TextEditingController();
+
+    Get.defaultDialog(
+      title: "Create Store",
+      content: Column(
+        children: [
+          TextField(
+              controller: name,
+              decoration:
+                  const InputDecoration(hintText: "Store Name")),
+          const SizedBox(height: 8),
+          TextField(
+              controller: address,
+              decoration:
+                  const InputDecoration(hintText: "Address")),
+        ],
+      ),
+      onConfirm: () {
+        controller.createStore({
+          "store_name": name.text,
+          "address": address.text,
+        });
+        Get.back();
+      },
+      textConfirm: "Create",
+      textCancel: "Cancel",
+      confirmTextColor: Colors.white,
+    );
+  }
+
+  void _showAddInventoryDialog() {
+    final price = TextEditingController();
+    final stock = TextEditingController();
+    final selectedStore = Rx<SellerStoreModel?>(null);
+    final selectedMedicine = Rx<Medicine?>(null);
+
+    if (controller.myStores.isNotEmpty) {
+      selectedStore.value = controller.myStores.first;
+    }
+
+    Get.defaultDialog(
+      title: "Add Inventory",
+      titleStyle: const TextStyle(
+          fontSize: 18, fontWeight: FontWeight.bold),
+      contentPadding: const EdgeInsets.all(16),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Store",
+                style:
+                    TextStyle(fontSize: 13, color: _textSecondary)),
+            const SizedBox(height: 4),
+            Obx(() {
+              if (controller.myStores.isEmpty) {
+                return const Text(
+                    "No stores found. Create a store first.",
+                    style: TextStyle(
+                        color: Colors.red, fontSize: 13));
+              }
+              return _dropdownContainer(
+                child: DropdownButton<SellerStoreModel>(
+                  isExpanded: true,
+                  value: selectedStore.value,
+                  items: controller.myStores
+                      .map((s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s.storeName,
+                              style: const TextStyle(
+                                  fontSize: 14))))
+                      .toList(),
+                  onChanged: (v) => selectedStore.value = v,
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
+            const Text("Medicine",
+                style:
+                    TextStyle(fontSize: 13, color: _textSecondary)),
+            const SizedBox(height: 4),
+            Obx(() {
+              if (controller.medicines.isEmpty) {
+                return const Text("No medicines found.",
+                    style: TextStyle(
+                        color: Colors.red, fontSize: 13));
+              }
+              return _dropdownContainer(
+                child: DropdownButton<Medicine>(
+                  isExpanded: true,
+                  value: selectedMedicine.value,
+                  hint: const Text("Select medicine",
+                      style: TextStyle(fontSize: 14)),
+                  items: controller.medicines
+                      .map((m) => DropdownMenuItem(
+                          value: m,
+                          child: Text(m.name ?? "-",
+                              style: const TextStyle(
+                                  fontSize: 14))))
+                      .toList(),
+                  onChanged: (v) => selectedMedicine.value = v,
+                ),
+              );
+            }),
+            const SizedBox(height: 12),
+            const Text("Price (₹)",
+                style:
+                    TextStyle(fontSize: 13, color: _textSecondary)),
+            const SizedBox(height: 4),
+            TextField(
+              controller: price,
+              keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true),
+              decoration: InputDecoration(
+                hintText: "e.g. 45.50",
+                prefixIcon:
+                    const Icon(Icons.currency_rupee, size: 18),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+            const SizedBox(height: 12),
+            const Text("Stock",
+                style:
+                    TextStyle(fontSize: 13, color: _textSecondary)),
+            const SizedBox(height: 4),
+            TextField(
+              controller: stock,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "e.g. 100",
+                prefixIcon: const Icon(Icons.inventory_2_outlined,
+                    size: 18),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+              ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
+          ],
         ),
-      ],
+      ),
+      onConfirm: () {
+        if (selectedStore.value == null) {
+          Get.snackbar("Error", "Please select a store",
+              backgroundColor: Colors.red,
+              colorText: Colors.white);
+          return;
+        }
+        if (selectedMedicine.value == null) {
+          Get.snackbar("Error", "Please select a medicine",
+              backgroundColor: Colors.red,
+              colorText: Colors.white);
+          return;
+        }
+        if (price.text.isEmpty || stock.text.isEmpty) {
+          Get.snackbar("Error", "Please fill price and stock",
+              backgroundColor: Colors.red,
+              colorText: Colors.white);
+          return;
+        }
+        controller.addInventory({
+          "store": selectedStore.value!.id,
+          "medicine": selectedMedicine.value!.id,
+          "price": double.parse(price.text),
+          "stock": int.parse(stock.text),
+        });
+        Get.back();
+      },
+      textConfirm: "Add",
+      textCancel: "Cancel",
+      confirmTextColor: Colors.white,
+    );
+  }
+
+  Widget _dropdownContainer({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(child: child),
+    );
+  }
+
+  void _showLogoutConfirmation() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Text("Logout",
+            style:
+                TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+        content: const Text(
+            "Are you sure you want to logout?",
+            style: TextStyle(fontSize: 14, color: _textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel",
+                style: TextStyle(color: _textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              _authController.logout();
+            },
+            child: const Text("Logout",
+                style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
     );
   }
 }

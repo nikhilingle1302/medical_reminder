@@ -24,23 +24,15 @@ class DioClient {
       _dio!.interceptors.add(
         InterceptorsWrapper(
           onRequest: (options, handler) async {
-            // Add auth token to headers
             final storage = GetStorage();
-            final token = storage.read('access_token');
+            final token = storage.read(AppConstants.tokenKey);
+
             if (token != null) {
-              // Check if it's JWT or Token-based auth
-              // For Django Token auth, use: Token <token>
-              // For JWT auth, use: Bearer <token>
-              if (token.length > 50 && !token.contains('.')) {
-                // Likely Django Token Authentication
-                options.headers['Authorization'] = 'Token $token';
-              } else {
-                // Likely JWT
-                options.headers['Authorization'] = 'Token $token';
-              }
+              options.headers['Authorization'] = 'Bearer $token';
             }
+
             print('REQUEST[${options.method}] => PATH: ${options.path}');
-            print('body: ${options.data}');
+            print('Headers: ${options.headers}');
             return handler.next(options);
           },
           onResponse: (response, handler) {

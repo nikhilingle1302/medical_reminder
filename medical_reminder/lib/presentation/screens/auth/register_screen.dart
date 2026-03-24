@@ -64,6 +64,17 @@ class RegisterScreen extends StatelessWidget {
               ),
               
               SizedBox(height: 20.h),
+              Text(
+                  'Email',
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 8.h),
+                CustomTextField(
+                  controller: _authController.emailController,
+                  hintText: 'Enter your email',
+                  prefixIconData: Icons.email_outlined,
+                ),
+                SizedBox(height: 20.h),
               
               // Password
               CustomTextField(
@@ -169,7 +180,7 @@ class RegisterScreen extends StatelessWidget {
   child: Row(
     children: [
       _buildRoleButton("Patient", AppConstants.patientRole),
-      _buildRoleButton("Caretaker", AppConstants.caretakerRole),
+      //_buildRoleButton("Caretaker", AppConstants.caretakerRole),
       _buildRoleButton("Seller", AppConstants.sellerRole),
     ],
   ),

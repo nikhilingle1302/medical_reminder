@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:typed_data';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -218,13 +217,13 @@ Future<void> scheduleReminderNotification(Reminder reminder) async {
     await _scheduleLocalNotification(
       id: reminder.id,
       title: 'Medication Reminder',
-      body: 'Time to take ${reminder.medicineName} - ${reminder.dosage}',
+      body: 'Time to take ${reminder.medicineName}',
       scheduledDateTime: scheduledTime,
       payload: {
         'type': 'reminder',
         'id': reminder.id.toString(),
         'medicine': reminder.medicineName,
-        'dosage': reminder.dosage,
+        'dosage':"",
       },
     );
     

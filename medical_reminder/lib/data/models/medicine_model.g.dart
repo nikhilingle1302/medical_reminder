@@ -13,6 +13,8 @@ Medicine _$MedicineFromJson(Map<String, dynamic> json) => Medicine(
       stock: (json['quantity'] as num?)?.toInt(),
       expiry: json['expiry_date'] as String?,
       category: json['category'] as String?,
+      requiresPrescription: json['"requires_prescription"'] as bool?,
+      description: json['description'] as String?,
     );
 
 Map<String, dynamic> _$MedicineToJson(Medicine instance) => <String, dynamic>{
@@ -22,6 +24,8 @@ Map<String, dynamic> _$MedicineToJson(Medicine instance) => <String, dynamic>{
       'quantity': instance.stock,
       'expiry_date': instance.expiry,
       'category': instance.category,
+      'description': instance.description,
+      '"requires_prescription"': instance.requiresPrescription,
     };
 
 CreateMedicineRequest _$CreateMedicineRequestFromJson(

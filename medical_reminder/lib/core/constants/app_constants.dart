@@ -6,6 +6,7 @@ class AppConstants {
   static const String tokenKey = 'access_token';
   static const String userKey = 'user_data';
   static const String roleKey = 'user_role';
+  static const String refreshKey = 'refresh_token';
   
   // Roles
    
@@ -25,7 +26,7 @@ class AppConstants {
 }
 class ApiConfig {
   // Base URL
-  static const String baseUrl = 'https://reminder-90sm.onrender.com';
+  static const String baseUrl = 'https://pharmeasy-5ba3.onrender.com';
   
   // API Endpoints - Updated to match your backend
   static const String register = '/api/accounts/register/';

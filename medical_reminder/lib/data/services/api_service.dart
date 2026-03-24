@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:medical_reminder/data/models/order_model.dart';
+import 'package:medical_reminder/data/models/search_medicien.dart';
 import 'package:retrofit/retrofit.dart';
 import 'package:medical_reminder/data/models/auth_model.dart';
 import 'package:medical_reminder/data/models/reminder_model.dart';
@@ -11,8 +13,12 @@ abstract class ApiService {
   factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
 
   // Auth Endpoints
-  @POST('/api/accounts/register/')
-  Future<User> register(@Body() RegisterRequest request);
+@POST('/api/register/')
+Future<RegisterResponse> register(@Body() RegisterRequest request);
+
+  @POST('/api/login/')
+Future<LoginResponse> login(@Body() LoginRequest request);
+  
 
   @POST('/api/accounts/patient/login/')
   Future<LoginResponse> patientLogin(@Body() LoginRequest request);
@@ -28,15 +34,27 @@ Future<dynamic> sellMedicine(@Body() Map<String, dynamic> request);
 
 
   // Pharmacy Endpoints
-  @GET('/api/pharmacy/medicines/')
+  @GET('/api/medicines/')
   Future<List<Medicine>> getMedicines();
 
   // Reminder Endpoints
-@GET('/api/reminders/')
-Future<ReminderResponse> getReminders();
+@GET('/api/reminders/my/')
+Future<List<Reminder>> getReminders();
 
-  @POST('/api/reminders/create/')
-  Future<dynamic> createReminder(@Body() dynmaicrequest);
+
+@POST('/api/reminders/')
+Future<dynamic> createReminder(@Body() Map<String, dynamic> request);
+
+@GET('/api/search/')
+Future<List<SearchResultItem>> searchMedicine(
+  @Query('q') String name,
+);
+
+@POST('/api/orders/')
+Future<dynamic> createOrder(@Body() Map<String, dynamic> request);
+
+@POST('/api/orders/{id}/confirm/')
+Future<dynamic> confirmOrder(@Path('id') int orderId);
 
   @PUT('/api/reminders/{id}/')
   Future<Reminder> updateReminder(
@@ -51,16 +69,31 @@ Future<ReminderResponse> getReminders();
   Future<Reminder> markReminderTaken(@Path('id') int id);
 
   // FCM Endpoints
-  @POST('/api/reminders/save-fcm-token/')
-  Future<void> saveFcmToken(@Body() Map<String, dynamic> token);
+@POST('/api/save-fcm-token/')
+Future<void> saveFcmToken(@Body() Map<String, String> body);
 
   @GET('/api/reminders/test-fcm/')
   Future<void> testFcm();
 
   // @POST('/api/pharmacy/medicines/save/')
   // Future<dynamic> createMedicine(@Body() dynamic request);
-    @POST('/api/pharmacy/medicines/')
+    @POST('/api/medicines/')
   Future<dynamic> createMedicine(@Body() dynamic request);
+
+ @POST('/api/stores/') 
+Future<dynamic> createStore(@Body() dynamic body);
+
+ @POST('/api/inventory/') 
+Future<dynamic> addInventory(@Body() dynamic body);
+
+@GET('/api/orders/')
+Future<List<OrderModel>> getOrders();
+
+@GET('/api/stores/all/')
+Future<List<StoreModel>> getAllStores();
+
+@GET('/api/stores/all/')
+Future<List<SellerStoreModel>> getSellerAllStores();
 
     @POST('/api/pharmacy/medicines/')
   Future<dynamic> createSellerMedicine(@Body() dynamic request);

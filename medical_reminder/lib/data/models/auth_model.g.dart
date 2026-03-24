@@ -7,19 +7,17 @@ part of 'auth_model.dart';
 // **************************************************************************
 
 User _$UserFromJson(Map<String, dynamic> json) => User(
-      id: (json['user_id'] as num?)?.toInt(),
+      id: (json['id'] as num).toInt(),
       username: json['username'] as String,
-      password: json['password'] as String?,
-      role: json['role'] as String?,
-      token: json['token'] as String?,
+      email: json['email'] as String,
+      role: json['role'] as String,
     );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
-      'user_id': instance.id,
+      'id': instance.id,
       'username': instance.username,
-      'password': instance.password,
+      'email': instance.email,
       'role': instance.role,
-      'token': instance.token,
     };
 
 LoginRequest _$LoginRequestFromJson(Map<String, dynamic> json) => LoginRequest(
@@ -36,6 +34,7 @@ Map<String, dynamic> _$LoginRequestToJson(LoginRequest instance) =>
 RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
     RegisterRequest(
       username: json['username'] as String,
+      email: json['email'] as String,
       password: json['password'] as String,
       role: json['role'] as String,
     );
@@ -43,24 +42,41 @@ RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
     <String, dynamic>{
       'username': instance.username,
+      'email': instance.email,
       'password': instance.password,
       'role': instance.role,
     };
 
 LoginResponse _$LoginResponseFromJson(Map<String, dynamic> json) =>
     LoginResponse(
-      token: json['token'] as String,
-      message: json['message'] as String,
-      userId: (json['user_id'] as num).toInt(),
-      username: json['username'] as String,
-      role: json['role'] as String,
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      tokens: TokenData.fromJson(json['tokens'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$LoginResponseToJson(LoginResponse instance) =>
     <String, dynamic>{
-      'token': instance.token,
-      'message': instance.message,
-      'user_id': instance.userId,
-      'username': instance.username,
-      'role': instance.role,
+      'user': instance.user,
+      'tokens': instance.tokens,
+    };
+
+RegisterResponse _$RegisterResponseFromJson(Map<String, dynamic> json) =>
+    RegisterResponse(
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      tokens: TokenData.fromJson(json['tokens'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$RegisterResponseToJson(RegisterResponse instance) =>
+    <String, dynamic>{
+      'user': instance.user,
+      'tokens': instance.tokens,
+    };
+
+TokenData _$TokenDataFromJson(Map<String, dynamic> json) => TokenData(
+      access: json['access'] as String,
+      refresh: json['refresh'] as String,
+    );
+
+Map<String, dynamic> _$TokenDataToJson(TokenData instance) => <String, dynamic>{
+      'access': instance.access,
+      'refresh': instance.refresh,
     };

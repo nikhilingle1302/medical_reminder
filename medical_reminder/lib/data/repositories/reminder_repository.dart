@@ -13,7 +13,8 @@ class ReminderRepository {
   ReminderRepository(this._apiService);
 
  Future<ReminderResponse> getReminders() async {
-  return await _apiService.getReminders();
+  final list = await _apiService.getReminders();
+  return ReminderResponse(reminders: list); // ✅ wrap into ReminderResponse
 }
 
   Future<List<Medicine>> getMedicines() async {
@@ -33,7 +34,7 @@ class ReminderRepository {
     // if (token == null) throw Exception('No authentication token');
     
     //return await _apiService.getDueReminders('Token $token');
-    return await _apiService.getDueReminders();
+    return await _apiService.getReminders();
   }
   
 }

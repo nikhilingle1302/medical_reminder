@@ -3,80 +3,280 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:medical_reminder/presentation/controllers/auth_controller.dart';
+import 'package:medical_reminder/presentation/controllers/medicine_controller.dart';
 import 'package:medical_reminder/presentation/controllers/reminder_controller.dart';
+import 'package:medical_reminder/presentation/widgets/orderScreen.dart';
+import 'package:medical_reminder/presentation/widgets/order_history_screen.dart';
 import 'package:medical_reminder/presentation/widgets/reminder_card.dart';
 import 'package:medical_reminder/presentation/widgets/medicine_card.dart';
+import 'package:medical_reminder/presentation/widgets/searchMedicineScreen.dart';
+import 'package:medical_reminder/presentation/widgets/storeListScreen.dart';
 class DashboardScreen extends StatelessWidget {
   final AuthController _authController = Get.find<AuthController>();
   final ReminderController _reminderController = Get.find<ReminderController>();
+  final MedicineController _medicineController = Get.find<MedicineController>();
   DashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Obx(() => Text(
-          'Welcome, ${_authController.username.value}!',
+  void _showLogoutConfirmation() {
+    Get.dialog(
+      AlertDialog(
+        title: Text(
+          'Logout',
           style: TextStyle(fontSize: 18.sp),
-        )),
+        ),
+        content: Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(fontSize: 14.sp),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {
-              // Show due reminders
-              _reminderController.getDueReminders();
-            },
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey,
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
+          TextButton(
             onPressed: () {
-              Get.toNamed('/profile');
+              Get.back();
+              _authController.logout();
             },
+            child: Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.red,
+              ),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 20.h),
-              
-              // Today's Date
-              Text(
-                'Today',
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
-                ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Obx(() => Text(
+            'Welcome, ${_authController.username.value}!',
+            style: TextStyle(fontSize: 18.sp),
+          )),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none),
+              onPressed: () {
+                // Show due reminders
+                _reminderController.getDueReminders();
+              },
+            ),
+            // IconButton(
+            //   icon: const Icon(Icons.person_outline),
+            //   onPressed: () {
+            //     Get.toNamed('/profile');
+            //   },
+            // ),
+          IconButton(
+                icon: const Icon(Icons.logout),
+                color: Colors.red,
+                onPressed: () {
+                  _showLogoutConfirmation();
+                },
               ),
-              SizedBox(height: 8.h),
-              Text(
-                DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: Colors.grey,
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 20.h),
+                
+                // Today's Date
+                Text(
+                  'Today',
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              
-              SizedBox(height: 24.h),
-              
-              // Today's Reminders Card
-              _buildTodayRemindersCard(),
-              
-              SizedBox(height: 24.h),
-              
-              // Medicines List (View Only for Patients)
-              _buildMedicinesSection(),
-              
-              SizedBox(height: 40.h),
-            ],
+                SizedBox(height: 8.h),
+                Text(
+                  DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.grey,
+                  ),
+                ),
+                SizedBox(height: 20.h),
+      
+                _buildSearchBar(),
+                
+                SizedBox(height: 24.h),
+                
+                // Today's Reminders Card
+                _buildTodayRemindersCard(),
+      
+                SizedBox(height: 20.h),
+                _buildQuickActions(),
+                
+                SizedBox(height: 24.h),
+                
+                // Medicines List (View Only for Patients)
+                _buildMedicinesSection(),
+                
+                SizedBox(height: 40.h),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  Widget _buildQuickActions() {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      _actionCard(
+        icon: Icons.search,
+        title: "Search",
+        onTap: () {
+          Get.to(() => SearchMedicineScreen());
+        },
+      ),
+      _actionCard(
+        icon: Icons.medication,
+        title: "Reminders",
+        onTap: () {
+          Get.toNamed('/add-reminder');
+        },
+      ),
+_actionCard(
+  icon: Icons.shopping_cart,
+  title: "Orders",
+  onTap: () {
+    Get.to(() => OrderHistoryScreen());
+  },
+      ),
+    ],
+  );
+}
+
+Widget _actionCard({
+  required IconData icon,
+  required String title,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 100.w,
+      padding: EdgeInsets.symmetric(vertical: 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 24.sp, color: Colors.blueAccent),
+          SizedBox(height: 8.h),
+          Text(
+            title,
+            style: TextStyle(fontSize: 12.sp),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+  Widget _buildSearchBar() {
+  return Column(
+    children: [
+      TextField(
+        decoration: InputDecoration(
+          hintText: "Search medicines...",
+          prefixIcon: const Icon(Icons.search),
+          filled: true,
+          fillColor: const Color(0xFFF5F5F5),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        onChanged: (value) {
+          if (value.length > 2) {
+            _medicineController.searchMedicine(value);
+          }
+        },
+      ),
+
+      SizedBox(height: 12.h),
+
+      Obx(() {
+        if (_medicineController.searchResults.isEmpty) {
+          return const SizedBox();
+        }
+
+        return Container(
+          height: 200.h,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+              )
+            ],
+          ),
+          child:  ListView.builder(
+  itemCount: _medicineController.searchResults.length,
+  itemBuilder: (context, index) {
+    final item = _medicineController.searchResults[index];
+
+return Card(
+  child: ListTile(
+    leading: const Icon(Icons.medication, color: Colors.blue),
+    title: Text(item.medicine),
+    subtitle: Text("${item.store}  •  Stock: ${item.stock}"),
+    trailing: Text(
+      "₹${item.price.toStringAsFixed(0)}",
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        color: Colors.green,
+      ),
+    ),
+    onTap: () {
+      // ✅ Go directly to OrderScreen — no StoreListScreen needed
+      Get.to(() => OrderScreen(
+        medicineId: item.medicineId,
+        storeId: item.storeId,
+        medicineName: item.medicine,
+        storeName: item.store,
+        price: item.price.toInt(),
+      ));
+    },
+  ),
+);
+  },
+),  
+        );
+      }),
+    ],
+  );
+}
   
   Widget _buildTodayRemindersCard() {
     return Container(
@@ -211,7 +411,56 @@ class DashboardScreen extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: medicines.length,
               itemBuilder: (context, index) {
-                return MedicineCard(medicine: medicines[index]);
+                 final m = medicines[index];
+                //return MedicineCard(medicine: medicines[index]);
+                            return Card(
+                margin: EdgeInsets.only(right: 12.w),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Container(
+                  width: 130.w,
+                  padding: EdgeInsets.all(12.w),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.medication,
+                          color: Colors.blueAccent, size: 28.sp),
+                      SizedBox(height: 8.h),
+                      Text(
+                        m.name ?? "-",
+                        style: TextStyle(
+                            fontSize: 13.sp, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 4.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 8.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: m.requiresPrescription == true
+                              ? Colors.orange.withOpacity(0.1)
+                              : Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          m.requiresPrescription == true ? "Rx" : "OTC",
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.bold,
+                            color: m.requiresPrescription == true
+                                ? Colors.orange
+                                : Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+
               },
             ),
           );

@@ -144,7 +144,7 @@ Container(
   child: Row(
     children: [
       _buildRoleButton("Patient", AppConstants.patientRole),
-      _buildRoleButton("Caretaker", AppConstants.caretakerRole),
+      //_buildRoleButton("Caretaker", AppConstants.caretakerRole),
       _buildRoleButton("Seller", AppConstants.sellerRole),
     ],
   ),
@@ -230,7 +230,7 @@ Container(
                     return;
                   }
                   //_authController.login(isPatient: _isPatientLogin.value);
-                  _authController.login(role: _authController.selectedRole.value);
+                  _authController.login(roleHint: _authController.selectedRole.value);
 
                 },
               )),

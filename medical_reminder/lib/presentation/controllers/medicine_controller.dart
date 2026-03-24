@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:medical_reminder/data/models/medicine_model.dart';
+import 'package:medical_reminder/data/models/search_medicien.dart';
 import 'package:medical_reminder/data/repositories/medicine_repository.dart';
 
 class MedicineController extends GetxController {
@@ -41,6 +42,52 @@ class MedicineController extends GetxController {
       isLoading.value = false;
     }
   }
+final RxList<SearchResultItem> searchResults = <SearchResultItem>[].obs;
+
+Future<void> searchMedicine(String query) async {
+  try {
+    isLoading.value = true;
+
+    final response = await _medicineRepository.searchMedicine(query);
+
+    // searchResults.assignAll(
+    //   response.map((e) => SearchMedicineModel.fromJson(e)).toList(),
+    // );
+    searchResults.assignAll(response);
+
+  } catch (e) {
+    Get.snackbar(
+      'Error',
+      'Search failed',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+Future<void> createOrder(int medicineId, int quantity) async {
+  try {
+    final request = {
+      "medicine": medicineId,
+      "quantity": quantity,
+    };
+
+    final response = await _medicineRepository.createOrder(request);
+
+    if (response != null) {
+      Get.snackbar(
+        "Success",
+        "Order placed successfully",
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    }
+  } catch (e) {
+    Get.snackbar("Error", "Order failed");
+  }
+}
   
   Future<void> createMedicine() async {
     try {
